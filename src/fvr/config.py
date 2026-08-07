@@ -124,4 +124,11 @@ def bootstrap_env(config: ProjectConfig | None = None) -> Paths:
     os.environ.setdefault("TORCH_HOME", str(paths.artifacts / "torch"))
     # Tokenizer threads fight the dataloader workers and make latency noisy.
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
+    # Export the token from .env so huggingface_hub picks it up. Without this
+    # every download is anonymous and rate-limited: pinning HF_HOME also moves
+    # the CLI's token file, so the library cannot find the usual one.
+    if (token := Secrets().hf_token) and "HF_TOKEN" not in os.environ:
+        os.environ["HF_TOKEN"] = token
+
     return paths
