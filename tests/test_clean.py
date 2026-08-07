@@ -19,6 +19,7 @@ from fvr.data.clean import (
     CleaningReport,
     build_lexicon,
     load_repair_lexicon,
+    load_system_dictionary,
     propose_repairs,
     repair_text,
 )
@@ -152,12 +153,20 @@ class TestProposeRepairs:
         freq = Counter({"pos": 100, "ports": 90})
         assert propose_repairs(freq, dictionary, bigrams=("rt",), min_count=10) == {}
 
+    @pytest.mark.skipif(
+        not load_system_dictionary(),
+        reason="needs /usr/share/dict/american-english, absent on CI runners",
+    )
     def test_build_lexicon_round_trips(self) -> None:
         texts = ["the hea pumps blood"] * 30 + ["the heart pumps blood"] * 25
         lexicon, provenance = build_lexicon(texts, min_count=10)
-        if lexicon:  # depends on a system wordlist being present
-            assert lexicon["hea"] == "heart"
-            assert provenance["hea"]["count"] == 30
+        assert lexicon["hea"] == "heart"
+        assert provenance["hea"]["count"] == 30
+
+    def test_build_lexicon_always_includes_overrides(self) -> None:
+        """Overrides are hand-verified, so they must survive an absent wordlist."""
+        lexicon, _ = build_lexicon(["irrelevant text"], min_count=10)
+        assert lexicon["aery"] == "artery"
 
 
 class TestCleaningReport:
