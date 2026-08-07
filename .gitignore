@@ -1,0 +1,52 @@
+# ---------------------------------------------------------------------------
+# The single deletable root. Every model, dataset, index and checkpoint this
+# project downloads or writes lives here (HF_HOME et al. point into it), so
+# teardown on the shared lab GPU is one directory and can never reach the
+# unrelated ~/.cache/huggingface next door.
+# ---------------------------------------------------------------------------
+.artifacts/
+
+# Model weights and datasets never go in git — Hub or DVC only.
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+*.ckpt
+*.onnx
+*.faiss
+*.index
+*.npy
+*.npz
+*.parquet
+*.arrow
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Tooling
+wandb/
+.ipynb_checkpoints/
+.DS_Store
+
+# Generated figures are committed (results/figures/*.png); their caches are not.
+results/**/.cache/

@@ -1,0 +1,22 @@
+# Project-wide, non-secret configuration.
+#
+# Secrets never appear here — tokens are read from the environment or .env via
+# `fvr.config.Secrets`, so a credential cannot reach git through this file.
+
+seed: 42
+
+# Timed inference is pinned to GPU 0 and the judge to GPU 1, so a latency
+# measurement is never taken while the judge is competing for the same device.
+inference_device: 0
+judge_device: 1
+
+# The project needs ~74 GiB (37 judge + 15 base + indices + checkpoints).
+# The setup check refuses to start below this, rather than dying mid-download.
+min_free_disk_gib: 90.0
+
+log_level: INFO
+
+# Paths are defaults from fvr.config.Paths and are all inside the repo:
+#   .artifacts/{hub,datasets,indices,checkpoints}  <- the only deletable root
+#   results/                                       <- committed to git
+# Override only if you relocate the artifact tree; teardown follows this config.

@@ -1,0 +1,39 @@
+# Local guardrails. The secret and large-file hooks matter most: this repo is
+# public, and model weights must reach the Hub rather than git.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        # LoRA adapters go to the Hub, never here.
+        args: ["--maxkb=2048"]
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        # .env.example holds placeholders that look like tokens by design.
+        exclude: '^(\.env\.example|uv\.lock)$'
+
+  - repo: local
+    hooks:
+      # detect-secrets is entropy-based and can miss a short, well-formed token.
+      # These prefixes are unambiguous, so match them exactly.
+      - id: no-hardcoded-tokens
+        name: no hardcoded HF/W&B tokens
+        entry: '(hf_[A-Za-z0-9]{34,}|wandb_[A-Za-z0-9]{32,})'
+        language: pygrep
+        exclude: '^(\.env\.example|\.pre-commit-config\.yaml)$'
