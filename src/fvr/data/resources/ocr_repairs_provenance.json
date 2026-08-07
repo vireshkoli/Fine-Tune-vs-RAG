@@ -1,0 +1,1355 @@
+{
+ "aboed": {
+  "bigram": "rt",
+  "correct_form_count": 17,
+  "count": 23,
+  "repair": "aborted"
+ },
+ "aboion": {
+  "bigram": "rt",
+  "correct_form_count": 503,
+  "count": 790,
+  "repair": "abortion"
+ },
+ "aboions": {
+  "bigram": "rt",
+  "correct_form_count": 104,
+  "count": 186,
+  "repair": "abortions"
+ },
+ "aefact": {
+  "bigram": "rt",
+  "correct_form_count": 6,
+  "count": 20,
+  "repair": "artefact"
+ },
+ "aerial": {
+  "bigram": "rt",
+  "correct_form_count": 1339,
+  "count": 2055,
+  "repair": "arterial",
+  "source": "DICTIONARY_OVERRIDES (manually verified)"
+ },
+ "aeries": {
+  "bigram": "rt",
+  "correct_form_count": 1394,
+  "count": 2237,
+  "repair": "arteries",
+  "source": "DICTIONARY_OVERRIDES (manually verified)"
+ },
+ "aeriosclerosis": {
+  "bigram": "rt",
+  "correct_form_count": 86,
+  "count": 118,
+  "repair": "arteriosclerosis"
+ },
+ "aery": {
+  "bigram": "rt",
+  "correct_form_count": 7009,
+  "count": 11203,
+  "repair": "artery",
+  "source": "DICTIONARY_OVERRIDES (manually verified)"
+ },
+ "ahritis": {
+  "bigram": "rt",
+  "correct_form_count": 1741,
+  "count": 2313,
+  "repair": "arthritis"
+ },
+ "ahropod": {
+  "bigram": "rt",
+  "correct_form_count": 59,
+  "count": 61,
+  "repair": "arthropod"
+ },
+ "ahropods": {
+  "bigram": "rt",
+  "correct_form_count": 15,
+  "count": 29,
+  "repair": "arthropods"
+ },
+ "aicle": {
+  "bigram": "rt",
+  "correct_form_count": 70,
+  "count": 96,
+  "repair": "article"
+ },
+ "aicles": {
+  "bigram": "rt",
+  "correct_form_count": 42,
+  "count": 30,
+  "repair": "articles"
+ },
+ "aiculate": {
+  "bigram": "rt",
+  "correct_form_count": 29,
+  "count": 35,
+  "repair": "articulate"
+ },
+ "aiculates": {
+  "bigram": "rt",
+  "correct_form_count": 40,
+  "count": 63,
+  "repair": "articulates"
+ },
+ "aiculation": {
+  "bigram": "rt",
+  "correct_form_count": 25,
+  "count": 60,
+  "repair": "articulation"
+ },
+ "aifact": {
+  "bigram": "rt",
+  "correct_form_count": 19,
+  "count": 44,
+  "repair": "artifact"
+ },
+ "aifacts": {
+  "bigram": "rt",
+  "correct_form_count": 12,
+  "count": 25,
+  "repair": "artifacts"
+ },
+ "aificial": {
+  "bigram": "rt",
+  "correct_form_count": 208,
+  "count": 246,
+  "repair": "artificial"
+ },
+ "albe": {
+  "bigram": "rt",
+  "correct_form_count": 34,
+  "count": 71,
+  "repair": "albert"
+ },
+ "aleness": {
+  "bigram": "rt",
+  "correct_form_count": 23,
+  "count": 23,
+  "repair": "alertness"
+ },
+ "aoa": {
+  "bigram": "rt",
+  "correct_form_count": 1265,
+  "count": 1888,
+  "repair": "aorta"
+ },
+ "apa": {
+  "bigram": "rt",
+  "correct_form_count": 197,
+  "count": 313,
+  "repair": "apart"
+ },
+ "apeure": {
+  "bigram": "rt",
+  "correct_form_count": 45,
+  "count": 68,
+  "repair": "aperture"
+ },
+ "baon": {
+  "bigram": "rt",
+  "correct_form_count": 38,
+  "count": 32,
+  "repair": "barton"
+ },
+ "bih": {
+  "bigram": "rt",
+  "correct_form_count": 2556,
+  "count": 3162,
+  "repair": "birth"
+ },
+ "bihs": {
+  "bigram": "rt",
+  "correct_form_count": 306,
+  "count": 484,
+  "repair": "births"
+ },
+ "cailage": {
+  "bigram": "rt",
+  "correct_form_count": 1212,
+  "count": 1358,
+  "repair": "cartilage"
+ },
+ "cailages": {
+  "bigram": "rt",
+  "correct_form_count": 116,
+  "count": 155,
+  "repair": "cartilages"
+ },
+ "cailaginous": {
+  "bigram": "rt",
+  "correct_form_count": 178,
+  "count": 154,
+  "repair": "cartilaginous"
+ },
+ "caridge": {
+  "bigram": "rt",
+  "correct_form_count": 36,
+  "count": 35,
+  "repair": "cartridge"
+ },
+ "ceain": {
+  "bigram": "rt",
+  "correct_form_count": 888,
+  "count": 1299,
+  "repair": "certain"
+ },
+ "ceainly": {
+  "bigram": "rt",
+  "correct_form_count": 34,
+  "count": 51,
+  "repair": "certainly"
+ },
+ "ceificate": {
+  "bigram": "rt",
+  "correct_form_count": 135,
+  "count": 121,
+  "repair": "certificate"
+ },
+ "ceified": {
+  "bigram": "rt",
+  "correct_form_count": 18,
+  "count": 22,
+  "repair": "certified"
+ },
+ "cha": {
+  "bigram": "rt",
+  "correct_form_count": 190,
+  "count": 249,
+  "repair": "chart"
+ },
+ "chaing": {
+  "bigram": "rt",
+  "correct_form_count": 19,
+  "count": 22,
+  "repair": "charting"
+ },
+ "chas": {
+  "bigram": "rt",
+  "correct_form_count": 43,
+  "count": 56,
+  "repair": "charts"
+ },
+ "childbih": {
+  "bigram": "rt",
+  "correct_form_count": 51,
+  "count": 65,
+  "repair": "childbirth"
+ },
+ "coex": {
+  "bigram": "rt",
+  "correct_form_count": 1116,
+  "count": 1394,
+  "repair": "cortex"
+ },
+ "coho": {
+  "bigram": "rt",
+  "correct_form_count": 199,
+  "count": 372,
+  "repair": "cohort"
+ },
+ "coical": {
+  "bigram": "rt",
+  "correct_form_count": 713,
+  "count": 776,
+  "repair": "cortical"
+ },
+ "coices": {
+  "bigram": "rt",
+  "correct_form_count": 29,
+  "count": 39,
+  "repair": "cortices"
+ },
+ "coisone": {
+  "bigram": "rt",
+  "correct_form_count": 26,
+  "count": 53,
+  "repair": "cortisone"
+ },
+ "comfo": {
+  "bigram": "rt",
+  "correct_form_count": 31,
+  "count": 39,
+  "repair": "comfort"
+ },
+ "comfoable": {
+  "bigram": "rt",
+  "correct_form_count": 28,
+  "count": 29,
+  "repair": "comfortable"
+ },
+ "compament": {
+  "bigram": "rt",
+  "correct_form_count": 410,
+  "count": 597,
+  "repair": "compartment"
+ },
+ "compaments": {
+  "bigram": "rt",
+  "correct_form_count": 76,
+  "count": 119,
+  "repair": "compartments"
+ },
+ "conve": {
+  "bigram": "rt",
+  "correct_form_count": 115,
+  "count": 157,
+  "repair": "convert"
+ },
+ "conveed": {
+  "bigram": "rt",
+  "correct_form_count": 630,
+  "count": 681,
+  "repair": "converted"
+ },
+ "conveing": {
+  "bigram": "rt",
+  "correct_form_count": 114,
+  "count": 223,
+  "repair": "converting"
+ },
+ "conves": {
+  "bigram": "rt",
+  "correct_form_count": 191,
+  "count": 295,
+  "repair": "converts"
+ },
+ "cou": {
+  "bigram": "rt",
+  "correct_form_count": 134,
+  "count": 235,
+  "repair": "court"
+ },
+ "couesy": {
+  "bigram": "rt",
+  "correct_form_count": 20,
+  "count": 26,
+  "repair": "courtesy"
+ },
+ "counterpa": {
+  "bigram": "rt",
+  "correct_form_count": 35,
+  "count": 48,
+  "repair": "counterpart"
+ },
+ "counterpas": {
+  "bigram": "rt",
+  "correct_form_count": 10,
+  "count": 29,
+  "repair": "counterparts"
+ },
+ "cuain": {
+  "bigram": "rt",
+  "correct_form_count": 20,
+  "count": 23,
+  "repair": "curtain"
+ },
+ "depament": {
+  "bigram": "rt",
+  "correct_form_count": 337,
+  "count": 350,
+  "repair": "department"
+ },
+ "dese": {
+  "bigram": "rt",
+  "correct_form_count": 18,
+  "count": 21,
+  "repair": "desert"
+ },
+ "discomfo": {
+  "bigram": "rt",
+  "correct_form_count": 261,
+  "count": 334,
+  "repair": "discomfort"
+ },
+ "dispropoion": {
+  "bigram": "rt",
+  "correct_form_count": 26,
+  "count": 36,
+  "repair": "disproportion"
+ },
+ "dispropoionate": {
+  "bigram": "rt",
+  "correct_form_count": 28,
+  "count": 44,
+  "repair": "disproportionate"
+ },
+ "dispropoionately": {
+  "bigram": "rt",
+  "correct_form_count": 28,
+  "count": 36,
+  "repair": "disproportionately"
+ },
+ "disto": {
+  "bigram": "rt",
+  "correct_form_count": 28,
+  "count": 43,
+  "repair": "distort"
+ },
+ "distoed": {
+  "bigram": "rt",
+  "correct_form_count": 69,
+  "count": 67,
+  "repair": "distorted"
+ },
+ "distoion": {
+  "bigram": "rt",
+  "correct_form_count": 150,
+  "count": 144,
+  "repair": "distortion"
+ },
+ "distoions": {
+  "bigram": "rt",
+  "correct_form_count": 9,
+  "count": 20,
+  "repair": "distortions"
+ },
+ "diy": {
+  "bigram": "rt",
+  "correct_form_count": 52,
+  "count": 83,
+  "repair": "dirty"
+ },
+ "eah": {
+  "bigram": "rt",
+  "correct_form_count": 54,
+  "count": 54,
+  "repair": "earth"
+ },
+ "effo": {
+  "bigram": "rt",
+  "correct_form_count": 155,
+  "count": 196,
+  "repair": "effort"
+ },
+ "effos": {
+  "bigram": "rt",
+  "correct_form_count": 74,
+  "count": 109,
+  "repair": "efforts"
+ },
+ "exe": {
+  "bigram": "rt",
+  "correct_form_count": 85,
+  "count": 117,
+  "repair": "exert"
+ },
+ "exeed": {
+  "bigram": "rt",
+  "correct_form_count": 45,
+  "count": 75,
+  "repair": "exerted"
+ },
+ "exeion": {
+  "bigram": "rt",
+  "correct_form_count": 120,
+  "count": 122,
+  "repair": "exertion"
+ },
+ "expe": {
+  "bigram": "rt",
+  "correct_form_count": 56,
+  "count": 86,
+  "repair": "expert"
+ },
+ "expeise": {
+  "bigram": "rt",
+  "correct_form_count": 13,
+  "count": 20,
+  "repair": "expertise"
+ },
+ "expes": {
+  "bigram": "rt",
+  "correct_form_count": 40,
+  "count": 47,
+  "repair": "experts"
+ },
+ "feile": {
+  "bigram": "rt",
+  "correct_form_count": 36,
+  "count": 57,
+  "repair": "fertile"
+ },
+ "feility": {
+  "bigram": "rt",
+  "correct_form_count": 359,
+  "count": 401,
+  "repair": "fertility"
+ },
+ "feilization": {
+  "bigram": "rt",
+  "correct_form_count": 237,
+  "count": 320,
+  "repair": "fertilization"
+ },
+ "feilized": {
+  "bigram": "rt",
+  "correct_form_count": 54,
+  "count": 103,
+  "repair": "fertilized"
+ },
+ "fingeip": {
+  "bigram": "rt",
+  "correct_form_count": 12,
+  "count": 26,
+  "repair": "fingertip"
+ },
+ "fingeips": {
+  "bigram": "rt",
+  "correct_form_count": 15,
+  "count": 33,
+  "repair": "fingertips"
+ },
+ "foh": {
+  "bigram": "rt",
+  "correct_form_count": 30,
+  "count": 24,
+  "repair": "forth"
+ },
+ "foification": {
+  "bigram": "rt",
+  "correct_form_count": 11,
+  "count": 27,
+  "repair": "fortification"
+ },
+ "foified": {
+  "bigram": "rt",
+  "correct_form_count": 22,
+  "count": 42,
+  "repair": "fortified"
+ },
+ "fouh": {
+  "bigram": "rt",
+  "correct_form_count": 500,
+  "count": 673,
+  "repair": "fourth"
+ },
+ "founately": {
+  "bigram": "rt",
+  "correct_form_count": 28,
+  "count": 26,
+  "repair": "fortunately"
+ },
+ "fuher": {
+  "bigram": "rt",
+  "correct_form_count": 1069,
+  "count": 1366,
+  "repair": "further"
+ },
+ "fuhermore": {
+  "bigram": "rt",
+  "correct_form_count": 42,
+  "count": 102,
+  "repair": "furthermore"
+ },
+ "gilbe": {
+  "bigram": "rt",
+  "correct_form_count": 75,
+  "count": 123,
+  "repair": "gilbert"
+ },
+ "hea": {
+  "bigram": "rt",
+  "correct_form_count": 4957,
+  "count": 7626,
+  "repair": "heart"
+ },
+ "heabeat": {
+  "bigram": "rt",
+  "correct_form_count": 19,
+  "count": 60,
+  "repair": "heartbeat"
+ },
+ "heaburn": {
+  "bigram": "rt",
+  "correct_form_count": 30,
+  "count": 41,
+  "repair": "heartburn"
+ },
+ "herbe": {
+  "bigram": "rt",
+  "correct_form_count": 39,
+  "count": 79,
+  "repair": "herbert"
+ },
+ "hypeension": {
+  "bigram": "rt",
+  "correct_form_count": 2519,
+  "count": 4060,
+  "repair": "hypertension"
+ },
+ "impa": {
+  "bigram": "rt",
+  "correct_form_count": 25,
+  "count": 23,
+  "repair": "impart"
+ },
+ "impas": {
+  "bigram": "rt",
+  "correct_form_count": 50,
+  "count": 41,
+  "repair": "imparts"
+ },
+ "impoance": {
+  "bigram": "rt",
+  "correct_form_count": 238,
+  "count": 399,
+  "repair": "importance"
+ },
+ "impoant": {
+  "bigram": "rt",
+  "correct_form_count": 3733,
+  "count": 4506,
+  "repair": "important"
+ },
+ "impoantly": {
+  "bigram": "rt",
+  "correct_form_count": 25,
+  "count": 45,
+  "repair": "importantly"
+ },
+ "impoed": {
+  "bigram": "rt",
+  "correct_form_count": 9,
+  "count": 21,
+  "repair": "imported"
+ },
+ "inadveent": {
+  "bigram": "rt",
+  "correct_form_count": 28,
+  "count": 42,
+  "repair": "inadvertent"
+ },
+ "ine": {
+  "bigram": "rt",
+  "correct_form_count": 49,
+  "count": 92,
+  "repair": "inert"
+ },
+ "ineia": {
+  "bigram": "rt",
+  "correct_form_count": 21,
+  "count": 37,
+  "repair": "inertia"
+ },
+ "infeile": {
+  "bigram": "rt",
+  "correct_form_count": 36,
+  "count": 66,
+  "repair": "infertile"
+ },
+ "infeility": {
+  "bigram": "rt",
+  "correct_form_count": 449,
+  "count": 645,
+  "repair": "infertility"
+ },
+ "inse": {
+  "bigram": "rt",
+  "correct_form_count": 69,
+  "count": 90,
+  "repair": "insert"
+ },
+ "inseed": {
+  "bigram": "rt",
+  "correct_form_count": 278,
+  "count": 384,
+  "repair": "inserted"
+ },
+ "inseing": {
+  "bigram": "rt",
+  "correct_form_count": 39,
+  "count": 54,
+  "repair": "inserting"
+ },
+ "inseion": {
+  "bigram": "rt",
+  "correct_form_count": 557,
+  "count": 707,
+  "repair": "insertion"
+ },
+ "inseions": {
+  "bigram": "rt",
+  "correct_form_count": 25,
+  "count": 34,
+  "repair": "insertions"
+ },
+ "inses": {
+  "bigram": "rt",
+  "correct_form_count": 59,
+  "count": 91,
+  "repair": "inserts"
+ },
+ "inveed": {
+  "bigram": "rt",
+  "correct_form_count": 202,
+  "count": 255,
+  "repair": "inverted"
+ },
+ "lambe": {
+  "bigram": "rt",
+  "correct_form_count": 43,
+  "count": 47,
+  "repair": "lambert"
+ },
+ "moality": {
+  "bigram": "rt",
+  "correct_form_count": 1077,
+  "count": 1684,
+  "repair": "mortality"
+ },
+ "neveheless": {
+  "bigram": "rt",
+  "correct_form_count": 28,
+  "count": 57,
+  "repair": "nevertheless"
+ },
+ "nohern": {
+  "bigram": "rt",
+  "correct_form_count": 79,
+  "count": 111,
+  "repair": "northern"
+ },
+ "ohopaedic": {
+  "bigram": "rt",
+  "correct_form_count": 28,
+  "count": 46,
+  "repair": "orthopaedic"
+ },
+ "ohopaedics": {
+  "bigram": "rt",
+  "correct_form_count": 111,
+  "count": 213,
+  "repair": "orthopaedics"
+ },
+ "ohopedic": {
+  "bigram": "rt",
+  "correct_form_count": 47,
+  "count": 71,
+  "repair": "orthopedic"
+ },
+ "ohopedics": {
+  "bigram": "rt",
+  "correct_form_count": 97,
+  "count": 270,
+  "repair": "orthopedics"
+ },
+ "oppounistic": {
+  "bigram": "rt",
+  "correct_form_count": 127,
+  "count": 190,
+  "repair": "opportunistic"
+ },
+ "oppounity": {
+  "bigram": "rt",
+  "correct_form_count": 34,
+  "count": 27,
+  "repair": "opportunity"
+ },
+ "ove": {
+  "bigram": "rt",
+  "correct_form_count": 77,
+  "count": 140,
+  "repair": "overt"
+ },
+ "paial": {
+  "bigram": "rt",
+  "correct_form_count": 1171,
+  "count": 1459,
+  "repair": "partial"
+ },
+ "paially": {
+  "bigram": "rt",
+  "correct_form_count": 305,
+  "count": 343,
+  "repair": "partially"
+ },
+ "paicipants": {
+  "bigram": "rt",
+  "correct_form_count": 40,
+  "count": 36,
+  "repair": "participants"
+ },
+ "paicipate": {
+  "bigram": "rt",
+  "correct_form_count": 76,
+  "count": 114,
+  "repair": "participate"
+ },
+ "paicipates": {
+  "bigram": "rt",
+  "correct_form_count": 53,
+  "count": 55,
+  "repair": "participates"
+ },
+ "paicipating": {
+  "bigram": "rt",
+  "correct_form_count": 16,
+  "count": 22,
+  "repair": "participating"
+ },
+ "paicipation": {
+  "bigram": "rt",
+  "correct_form_count": 90,
+  "count": 120,
+  "repair": "participation"
+ },
+ "paicle": {
+  "bigram": "rt",
+  "correct_form_count": 208,
+  "count": 200,
+  "repair": "particle"
+ },
+ "paicles": {
+  "bigram": "rt",
+  "correct_form_count": 462,
+  "count": 468,
+  "repair": "particles"
+ },
+ "paicular": {
+  "bigram": "rt",
+  "correct_form_count": 441,
+  "count": 708,
+  "repair": "particular"
+ },
+ "paicularly": {
+  "bigram": "rt",
+  "correct_form_count": 1179,
+  "count": 1628,
+  "repair": "particularly"
+ },
+ "paiculate": {
+  "bigram": "rt",
+  "correct_form_count": 37,
+  "count": 51,
+  "repair": "particulate"
+ },
+ "paition": {
+  "bigram": "rt",
+  "correct_form_count": 77,
+  "count": 89,
+  "repair": "partition"
+ },
+ "paly": {
+  "bigram": "rt",
+  "correct_form_count": 223,
+  "count": 255,
+  "repair": "partly"
+ },
+ "paner": {
+  "bigram": "rt",
+  "correct_form_count": 133,
+  "count": 144,
+  "repair": "partner"
+ },
+ "paners": {
+  "bigram": "rt",
+  "correct_form_count": 89,
+  "count": 100,
+  "repair": "partners"
+ },
+ "panership": {
+  "bigram": "rt",
+  "correct_form_count": 14,
+  "count": 23,
+  "repair": "partnership"
+ },
+ "paurition": {
+  "bigram": "rt",
+  "correct_form_count": 26,
+  "count": 35,
+  "repair": "parturition"
+ },
+ "poable": {
+  "bigram": "rt",
+  "correct_form_count": 13,
+  "count": 24,
+  "repair": "portable"
+ },
+ "poal": {
+  "bigram": "rt",
+  "correct_form_count": 857,
+  "count": 1514,
+  "repair": "portal"
+ },
+ "poer": {
+  "bigram": "rt",
+  "correct_form_count": 22,
+  "count": 22,
+  "repair": "porter"
+ },
+ "poion": {
+  "bigram": "rt",
+  "correct_form_count": 1058,
+  "count": 1356,
+  "repair": "portion"
+ },
+ "poions": {
+  "bigram": "rt",
+  "correct_form_count": 125,
+  "count": 186,
+  "repair": "portions"
+ },
+ "postmoem": {
+  "bigram": "rt",
+  "correct_form_count": 220,
+  "count": 339,
+  "repair": "postmortem"
+ },
+ "postpaum": {
+  "bigram": "rt",
+  "correct_form_count": 233,
+  "count": 355,
+  "repair": "postpartum"
+ },
+ "povey": {
+  "bigram": "rt",
+  "correct_form_count": 77,
+  "count": 108,
+  "repair": "poverty"
+ },
+ "propeies": {
+  "bigram": "rt",
+  "correct_form_count": 454,
+  "count": 520,
+  "repair": "properties"
+ },
+ "propey": {
+  "bigram": "rt",
+  "correct_form_count": 372,
+  "count": 485,
+  "repair": "property"
+ },
+ "propoion": {
+  "bigram": "rt",
+  "correct_form_count": 345,
+  "count": 503,
+  "repair": "proportion"
+ },
+ "propoional": {
+  "bigram": "rt",
+  "correct_form_count": 348,
+  "count": 349,
+  "repair": "proportional"
+ },
+ "propoionate": {
+  "bigram": "rt",
+  "correct_form_count": 41,
+  "count": 51,
+  "repair": "proportionate"
+ },
+ "propoionately": {
+  "bigram": "rt",
+  "correct_form_count": 15,
+  "count": 29,
+  "repair": "proportionately"
+ },
+ "propoions": {
+  "bigram": "rt",
+  "correct_form_count": 52,
+  "count": 74,
+  "repair": "proportions"
+ },
+ "pubey": {
+  "bigram": "rt",
+  "correct_form_count": 594,
+  "count": 814,
+  "repair": "puberty"
+ },
+ "quaer": {
+  "bigram": "rt",
+  "correct_form_count": 49,
+  "count": 79,
+  "repair": "quarter"
+ },
+ "quaers": {
+  "bigram": "rt",
+  "correct_form_count": 10,
+  "count": 22,
+  "repair": "quarters"
+ },
+ "repo": {
+  "bigram": "rt",
+  "correct_form_count": 210,
+  "count": 289,
+  "repair": "report"
+ },
+ "repoed": {
+  "bigram": "rt",
+  "correct_form_count": 670,
+  "count": 904,
+  "repair": "reported"
+ },
+ "repoing": {
+  "bigram": "rt",
+  "correct_form_count": 65,
+  "count": 110,
+  "repair": "reporting"
+ },
+ "repos": {
+  "bigram": "rt",
+  "correct_form_count": 295,
+  "count": 317,
+  "repair": "reports"
+ },
+ "reso": {
+  "bigram": "rt",
+  "correct_form_count": 17,
+  "count": 35,
+  "repair": "resort"
+ },
+ "reve": {
+  "bigram": "rt",
+  "correct_form_count": 23,
+  "count": 28,
+  "repair": "revert"
+ },
+ "schwaz": {
+  "bigram": "rt",
+  "correct_form_count": 361,
+  "count": 591,
+  "repair": "schwartz"
+ },
+ "sho": {
+  "bigram": "rt",
+  "correct_form_count": 2171,
+  "count": 3062,
+  "repair": "short"
+ },
+ "shoen": {
+  "bigram": "rt",
+  "correct_form_count": 52,
+  "count": 50,
+  "repair": "shorten"
+ },
+ "shoened": {
+  "bigram": "rt",
+  "correct_form_count": 118,
+  "count": 141,
+  "repair": "shortened"
+ },
+ "shoening": {
+  "bigram": "rt",
+  "correct_form_count": 227,
+  "count": 237,
+  "repair": "shortening"
+ },
+ "shoens": {
+  "bigram": "rt",
+  "correct_form_count": 38,
+  "count": 39,
+  "repair": "shortens"
+ },
+ "shoer": {
+  "bigram": "rt",
+  "correct_form_count": 214,
+  "count": 283,
+  "repair": "shorter"
+ },
+ "shoest": {
+  "bigram": "rt",
+  "correct_form_count": 244,
+  "count": 246,
+  "repair": "shortest"
+ },
+ "sholy": {
+  "bigram": "rt",
+  "correct_form_count": 116,
+  "count": 153,
+  "repair": "shortly"
+ },
+ "shoness": {
+  "bigram": "rt",
+  "correct_form_count": 143,
+  "count": 259,
+  "repair": "shortness"
+ },
+ "soing": {
+  "bigram": "rt",
+  "correct_form_count": 17,
+  "count": 24,
+  "repair": "sorting"
+ },
+ "spos": {
+  "bigram": "rt",
+  "correct_form_count": 61,
+  "count": 70,
+  "repair": "sports"
+ },
+ "spu": {
+  "bigram": "rt",
+  "correct_form_count": 44,
+  "count": 54,
+  "repair": "spurt"
+ },
+ "sta": {
+  "bigram": "rt",
+  "correct_form_count": 512,
+  "count": 713,
+  "repair": "start"
+ },
+ "staed": {
+  "bigram": "rt",
+  "correct_form_count": 454,
+  "count": 657,
+  "repair": "started"
+ },
+ "staing": {
+  "bigram": "rt",
+  "correct_form_count": 263,
+  "count": 398,
+  "repair": "starting"
+ },
+ "stas": {
+  "bigram": "rt",
+  "correct_form_count": 527,
+  "count": 798,
+  "repair": "starts"
+ },
+ "stewa": {
+  "bigram": "rt",
+  "correct_form_count": 30,
+  "count": 32,
+  "repair": "stewart"
+ },
+ "stillbih": {
+  "bigram": "rt",
+  "correct_form_count": 47,
+  "count": 42,
+  "repair": "stillbirth"
+ },
+ "stillbihs": {
+  "bigram": "rt",
+  "correct_form_count": 18,
+  "count": 27,
+  "repair": "stillbirths"
+ },
+ "stua": {
+  "bigram": "rt",
+  "correct_form_count": 70,
+  "count": 46,
+  "repair": "stuart"
+ },
+ "suppo": {
+  "bigram": "rt",
+  "correct_form_count": 668,
+  "count": 806,
+  "repair": "support"
+ },
+ "suppoed": {
+  "bigram": "rt",
+  "correct_form_count": 137,
+  "count": 142,
+  "repair": "supported"
+ },
+ "suppoing": {
+  "bigram": "rt",
+  "correct_form_count": 131,
+  "count": 113,
+  "repair": "supporting"
+ },
+ "suppoive": {
+  "bigram": "rt",
+  "correct_form_count": 164,
+  "count": 207,
+  "repair": "supportive"
+ },
+ "suppos": {
+  "bigram": "rt",
+  "correct_form_count": 118,
+  "count": 123,
+  "repair": "supports"
+ },
+ "teiary": {
+  "bigram": "rt",
+  "correct_form_count": 335,
+  "count": 455,
+  "repair": "tertiary"
+ },
+ "thiy": {
+  "bigram": "rt",
+  "correct_form_count": 19,
+  "count": 28,
+  "repair": "thirty"
+ },
+ "touous": {
+  "bigram": "rt",
+  "correct_form_count": 72,
+  "count": 88,
+  "repair": "tortuous"
+ },
+ "toure": {
+  "bigram": "rt",
+  "correct_form_count": 32,
+  "count": 56,
+  "repair": "torture"
+ },
+ "transpo": {
+  "bigram": "rt",
+  "correct_form_count": 1289,
+  "count": 1573,
+  "repair": "transport"
+ },
+ "transpoation": {
+  "bigram": "rt",
+  "correct_form_count": 26,
+  "count": 45,
+  "repair": "transportation"
+ },
+ "transpoed": {
+  "bigram": "rt",
+  "correct_form_count": 343,
+  "count": 376,
+  "repair": "transported"
+ },
+ "transpoer": {
+  "bigram": "rt",
+  "correct_form_count": 231,
+  "count": 308,
+  "repair": "transporter"
+ },
+ "transpoers": {
+  "bigram": "rt",
+  "correct_form_count": 52,
+  "count": 118,
+  "repair": "transporters"
+ },
+ "transpoing": {
+  "bigram": "rt",
+  "correct_form_count": 24,
+  "count": 43,
+  "repair": "transporting"
+ },
+ "transpos": {
+  "bigram": "rt",
+  "correct_form_count": 81,
+  "count": 103,
+  "repair": "transports"
+ },
+ "unceain": {
+  "bigram": "rt",
+  "correct_form_count": 68,
+  "count": 81,
+  "repair": "uncertain"
+ },
+ "uncomfoable": {
+  "bigram": "rt",
+  "correct_form_count": 38,
+  "count": 39,
+  "repair": "uncomfortable"
+ },
+ "undeaken": {
+  "bigram": "rt",
+  "correct_form_count": 78,
+  "count": 106,
+  "repair": "undertaken"
+ },
+ "unfounately": {
+  "bigram": "rt",
+  "correct_form_count": 39,
+  "count": 42,
+  "repair": "unfortunately"
+ },
+ "unsuppoed": {
+  "bigram": "rt",
+  "correct_form_count": 30,
+  "count": 47,
+  "repair": "unsupported"
+ },
+ "veebra": {
+  "bigram": "rt",
+  "correct_form_count": 383,
+  "count": 505,
+  "repair": "vertebra"
+ },
+ "veebrae": {
+  "bigram": "rt",
+  "correct_form_count": 397,
+  "count": 548,
+  "repair": "vertebrae"
+ },
+ "veebral": {
+  "bigram": "rt",
+  "correct_form_count": 751,
+  "count": 1044,
+  "repair": "vertebral"
+ },
+ "veebrate": {
+  "bigram": "rt",
+  "correct_form_count": 56,
+  "count": 71,
+  "repair": "vertebrate"
+ },
+ "veebrates": {
+  "bigram": "rt",
+  "correct_form_count": 13,
+  "count": 30,
+  "repair": "vertebrates"
+ },
+ "veex": {
+  "bigram": "rt",
+  "correct_form_count": 113,
+  "count": 132,
+  "repair": "vertex"
+ },
+ "veical": {
+  "bigram": "rt",
+  "correct_form_count": 857,
+  "count": 743,
+  "repair": "vertical"
+ },
+ "veically": {
+  "bigram": "rt",
+  "correct_form_count": 90,
+  "count": 141,
+  "repair": "vertically"
+ },
+ "veigo": {
+  "bigram": "rt",
+  "correct_form_count": 320,
+  "count": 348,
+  "repair": "vertigo"
+ },
+ "viual": {
+  "bigram": "rt",
+  "correct_form_count": 14,
+  "count": 37,
+  "repair": "virtual"
+ },
+ "viually": {
+  "bigram": "rt",
+  "correct_form_count": 212,
+  "count": 241,
+  "repair": "virtually"
+ },
+ "viue": {
+  "bigram": "rt",
+  "correct_form_count": 31,
+  "count": 52,
+  "repair": "virtue"
+ },
+ "voex": {
+  "bigram": "rt",
+  "correct_form_count": 18,
+  "count": 26,
+  "repair": "vortex"
+ },
+ "whaon": {
+  "bigram": "rt",
+  "correct_form_count": 26,
+  "count": 25,
+  "repair": "wharton"
+ },
+ "woh": {
+  "bigram": "rt",
+  "correct_form_count": 70,
+  "count": 48,
+  "repair": "worth"
+ },
+ "wohlessness": {
+  "bigram": "rt",
+  "correct_form_count": 24,
+  "count": 21,
+  "repair": "worthlessness"
+ }
+}

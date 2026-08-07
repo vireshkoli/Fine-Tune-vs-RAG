@@ -1,0 +1,26 @@
+{
+  "dataset": "openlifescienceai/medmcqa",
+  "dataset_revision": "91c6572c454088bf71b679ad90aa8dffcd0d5868",
+  "labelled_pool_size": 4142,
+  "manifest_version": 1,
+  "note": "MedMCQA's own `test` split withholds labels (cop == -1), so the labelled `validation` split is the only usable evaluation pool. test/val/reserve below are carved from it.",
+  "ocr_lexicon_entries": 225,
+  "seed": 42,
+  "source_split": "validation",
+  "splits": {
+    "reserve": {
+      "n": 2642,
+      "sha256": "d9c947946ba38598778b2d32672695a2d59695c550991fada8dc59b45b84421c"
+    },
+    "test": {
+      "n": 1000,
+      "sha256": "9aac1bc01a70dcb6a592fa5a7730274a61a0fdf8553b533026c737c206301f90"
+    },
+    "val": {
+      "n": 500,
+      "sha256": "e10015cda15a68effc2dd59ba88149035b2bbbb6f8ae7139303e6467dfbbac44"
+    }
+  },
+  "train_leakage_rows": 0,
+  "train_leaked_ids": []
+}
