@@ -1,0 +1,28 @@
+# Base model for every arm.
+#
+# Apache 2.0 and ungated, which is why it was chosen over Llama-3.1-8B: nothing
+# on this project's critical path needs an access request.
+
+name: qwen3-8b
+repo_id: Qwen/Qwen3-8B
+
+# Pinned, not "main". Once the lab GPU is wiped the local weights are gone, and
+# an unpinned repo would silently resolve to a different model on a rebuild.
+# The trailing pragma tells detect-secrets this is a public Hub commit SHA, not
+# a credential — it is high-entropy hex, so the scanner flags it by default.
+revision: b968826d9c46dd6066d109eabc6255188de91218  # pragma: allowlist secret
+
+dtype: bfloat16
+device: 0
+
+# Qwen3 is a hybrid reasoning model. Thinking is disabled for every arm because
+# variable-length traces would confound both latency and cost measurement.
+enable_thinking: false
+
+# Long enough for a stem plus four options and five retrieved passages.
+max_seq_length: 4096
+max_new_tokens: 8
+
+# Greedy. Identical decoding across arms, so accuracy differences cannot come
+# from sampling noise.
+temperature: 0.0

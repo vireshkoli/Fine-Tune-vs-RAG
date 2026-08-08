@@ -1,0 +1,21 @@
+# Cost accounting. One rate card for every arm — local GPU-seconds are never
+# mixed with hosted API pricing, because that comparison is meaningless.
+#
+# The benchmark ran on 2x NVIDIA A40 (46GB). The GPU rate below is a published
+# on-demand cloud price for the same card, so the cost model reflects what this
+# workload *would* cost to run rather than the sunk cost of university hardware.
+
+rate_card:
+  gpu_name: NVIDIA A40 46GB
+  gpu_usd_per_hour: 0.40
+  cpu_usd_per_hour: 0.03
+  source_url: https://runpod.io/pricing
+  retrieved: "2026-08-07"
+
+# Lifetime query volume over which fixed costs (training, index build) are
+# amortised. This is an assumption, so it is swept rather than asserted: the
+# headline chart plots cost against volume and the crossover point is the
+# actual deliverable.
+amortization:
+  default_volume: 100000
+  sweep_volumes: [100, 1000, 10000, 100000, 1000000, 10000000]
