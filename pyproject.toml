@@ -49,7 +49,21 @@ dev = [
     "types-pyyaml>=6.0",
     "pre-commit>=4.0",
     "pandas-stubs>=3.0.5.260730",
+    "scipy-stubs>=1.18.0.1",
 ]
+
+# The lab GPU runs NVIDIA driver 570.133.07 (CUDA 12.8). PyPI's default torch
+# wheel is built against CUDA 13.0 and refuses to initialise here. Updating the
+# driver is not an option — this is shared university hardware — so torch comes
+# from the cu128 index instead. Anyone reproducing on a newer driver can drop
+# this block; anyone on 12.x needs it.
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
 
 [build-system]
 requires = ["hatchling"]
@@ -101,6 +115,14 @@ module = [
     "datasets.*", "faiss.*", "sentence_transformers.*", "wandb.*", "vllm.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# The one module that touches transformers/peft constructors directly. Those
+# ship unannotated callables, so strict mode rejects every call into them.
+# Scoped to this single file rather than relaxed globally — everything else,
+# including all eval and data code, stays fully strict.
+module = ["fvr.models.loader"]
+disallow_untyped_calls = false
 
 # --------------------------------------------------------------------------- pytest
 [tool.pytest.ini_options]

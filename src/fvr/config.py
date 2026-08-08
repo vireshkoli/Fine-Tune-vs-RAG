@@ -125,6 +125,12 @@ def bootstrap_env(config: ProjectConfig | None = None) -> Paths:
     # Tokenizer threads fight the dataloader workers and make latency noisy.
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
+    # Fall back to plain HTTPS transfer. The Xet CDN returned intermittent 500s
+    # for Qwen3-8B shards from this network and huggingface_hub raises rather
+    # than retrying, which kills a long download near the end. Override by
+    # exporting HF_HUB_DISABLE_XET=0 if Xet works for you.
+    os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
+
     # Export the token from .env so huggingface_hub picks it up. Without this
     # every download is anonymous and rate-limited: pinning HF_HOME also moves
     # the CLI's token file, so the library cannot find the usual one.
