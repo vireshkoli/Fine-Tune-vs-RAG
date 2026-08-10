@@ -133,3 +133,67 @@ class TestBootstrapEnv:
     def test_artifacts_directory_is_gitignored(self) -> None:
         ignored = (PROJECT_ROOT / ".gitignore").read_text(encoding="utf-8")
         assert f"{ARTIFACTS_DIRNAME}/" in ignored, "the artifact tree must never be committed"
+
+
+class TestCacheIsolationSurvivesImportOrder:
+    """Regression guard for a real ~18GB leak into the shared lab cache.
+
+    ``huggingface_hub`` freezes its cache path at import time. Scripts used to
+    call ``bootstrap_env()`` in ``main()``, but by then ``fvr.data.loaders`` had
+    already imported ``huggingface_hub`` transitively, so the default
+    ``~/.cache/huggingface`` was already locked in. ``fvr/__init__.py`` now
+    bootstraps on package import; these tests fail if that is ever removed.
+    """
+
+    def test_hub_cache_is_inside_artifacts(self) -> None:
+        import huggingface_hub.constants as constants
+
+        assert Path(constants.HF_HUB_CACHE).resolve().is_relative_to(Paths().artifacts)
+
+    def test_hub_cache_is_not_the_shared_cache(self) -> None:
+        import huggingface_hub.constants as constants
+
+        shared = (Path.home() / ".cache" / "huggingface").resolve()
+        assert not Path(constants.HF_HUB_CACHE).resolve().is_relative_to(shared)
+
+    def test_importing_the_package_alone_isolates_the_cache(self) -> None:
+        """A fresh interpreter that imports only ``fvr`` must already be isolated."""
+        import subprocess
+        import sys
+
+        out = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import fvr; import huggingface_hub.constants as c; print(c.HF_HUB_CACHE)",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=True,
+            cwd=PROJECT_ROOT,
+        ).stdout.strip()
+        assert Path(out).resolve().is_relative_to(Paths().artifacts), out
+
+    def test_the_broken_import_order_is_now_safe(self) -> None:
+        """Importing huggingface_hub *before* fvr must still end up isolated.
+
+        This is the exact order that caused the leak.
+        """
+        import subprocess
+        import sys
+
+        out = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import huggingface_hub.constants as c; import fvr.data.loaders; "
+                "import importlib; importlib.reload(c); print(c.HF_HUB_CACHE)",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=True,
+            cwd=PROJECT_ROOT,
+        ).stdout.strip()
+        assert Path(out).resolve().is_relative_to(Paths().artifacts), out

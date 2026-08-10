@@ -34,22 +34,31 @@ def main() -> int:
     parser.add_argument("--arm", default="base", help="arm name (see fvr.inference.arms)")
     parser.add_argument("--model", default="configs/model/qwen3-8b.yaml")
     parser.add_argument("--seed", type=int, default=None, help="defaults to configs/base.yaml")
-    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument(
+        "--batch-size", type=int, default=None, help="defaults to configs/base.yaml"
+    )
     parser.add_argument("--limit", type=int, default=None, help="evaluate only the first N items")
     parser.add_argument("--adapter", default=None, help="LoRA adapter path for fine-tuned arms")
+    parser.add_argument("--retrieval-config", default="configs/retrieval/bge_large.yaml")
     args = parser.parse_args()
 
     config = load_config()
     paths = bootstrap_env(config)
     seed = args.seed if args.seed is not None else config.seed
+    batch_size = args.batch_size if args.batch_size is not None else config.eval_batch_size
     set_all_seeds(seed)
 
     arm = get_arm(args.arm)
     if arm.uses_adapter and not args.adapter:
         console.print(f"[red]Arm {arm.name!r} needs --adapter (training lands in Phase 5).[/]")
         return 1
-    if arm.uses_retrieval:
-        console.print(f"[red]Arm {arm.name!r} needs a retrieval index (Phase 4).[/]")
+
+    index_dir = paths.indices / arm.corpus if arm.uses_retrieval else None
+    if index_dir is not None and not (index_dir / "index.faiss").is_file():
+        console.print(
+            f"[red]Arm {arm.name!r} needs the {arm.corpus!r} index. "
+            f"Run: make index CORPUS={arm.corpus}[/]"
+        )
         return 1
 
     manifest = json.loads((paths.results / "split_manifest.json").read_text(encoding="utf-8"))
@@ -84,6 +93,30 @@ def main() -> int:
 
     engine = InferenceEngine(loaded)
 
+    retrieve = None
+    retrieval_info = None
+    if index_dir is not None:
+        from fvr.retrieval.embed import load_embedder_config
+        from fvr.retrieval.retriever import load_retrieval_config, load_retriever
+
+        embedder_config = load_embedder_config(args.retrieval_config)
+        retrieval_config = load_retrieval_config(args.retrieval_config)
+        console.print(
+            f"Loading the {arm.corpus!r} index with {embedder_config.name} "
+            f"(top_k={retrieval_config.top_k}, budget={retrieval_config.max_context_chars} chars)…"
+        )
+        retriever = load_retriever(index_dir, embedder_config, retrieval_config)
+        console.print(f"  {len(retriever.index):,} passages indexed")
+        retrieve = retriever.retrieve_many
+        retrieval_info = {
+            "corpus": arm.corpus,
+            "n_passages": len(retriever.index),
+            "embedder": embedder_config.name,
+            "embedder_revision": embedder_config.revision,
+            "top_k": retrieval_config.top_k,
+            "max_context_chars": retrieval_config.max_context_chars,
+        }
+
     console.print(f"Scoring [bold]{arm.name}[/] over {len(questions):,} items…")
     with Progress(console=console) as progress:
         task = progress.add_task("scoring", total=len(questions))
@@ -97,7 +130,10 @@ def main() -> int:
             questions,
             seed=seed,
             split_sha256=manifest["splits"]["test"]["sha256"],
-            batch_size=args.batch_size,
+            batch_size=batch_size,
+            retrieve=retrieve,
+            retrieval_info=retrieval_info,
+            device=model_config.device,
             progress=tick,
         )
 
@@ -115,6 +151,19 @@ def main() -> int:
         f"  MDE       {result.minimum_detectable_effect:.3f} "
         "(smallest gap this test-set size can resolve)"
     )
+    if result.groundedness:
+        g = result.groundedness
+        console.print(
+            f"  retrieval hit={g['retrieval_hit_rate']:.3f} "
+            f"grounded={g['grounded_rate']:.3f} "
+            f"ctx={g['mean_context_chars']:.0f} chars over {g['mean_passages']:.1f} passages"
+        )
+    if result.device_occupancy and not result.device_occupancy.get("exclusive"):
+        console.print(
+            f"  [yellow]WARNING: GPU {model_config.device} was shared during timing "
+            f"({result.device_occupancy['foreign_mib']} MiB held by another process). "
+            "Latency is not comparable with exclusive runs.[/]"
+        )
     console.print(f"  written   [cyan]{out}[/]")
 
     chance = 1.0 / 4

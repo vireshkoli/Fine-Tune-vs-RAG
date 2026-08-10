@@ -5,14 +5,25 @@
 
 seed: 42
 
-# Timed inference is pinned to GPU 0 and the judge to GPU 1, so a latency
-# measurement is never taken while the judge is competing for the same device.
-inference_device: 0
+# Both pinned to GPU 1. GPU 0 belongs to a separate project of the author's and
+# is treated as off-limits until it is explicitly released; at the time of
+# writing it sits at 98% memory with an unrelated training job.
+#
+# Sharing one device is safe because the runner never lets the judge and a timed
+# run overlap — it starts and tears down the judge around evaluation. What must
+# never happen is a latency measurement taken while anything else is resident,
+# which `assert_device_exclusive` now checks rather than assumes.
+inference_device: 1
 judge_device: 1
 
 # The project needs ~74 GiB (37 judge + 15 base + indices + checkpoints).
 # The setup check refuses to start below this, rather than dying mid-download.
 min_free_disk_gib: 90.0
+
+# Fixed so results are reproducible. Batch size is not inert: it changes padding,
+# and in bf16 that shifts a couple of borderline items (0.566 at 16 vs 0.568 at 8
+# on otherwise identical runs). Every arm must therefore use the same value.
+eval_batch_size: 8
 
 log_level: INFO
 

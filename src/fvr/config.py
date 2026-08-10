@@ -75,6 +75,9 @@ class ProjectConfig(BaseModel):
     judge_device: int = 1
     #: Fail the setup check below this much free disk (the project needs ~74 GiB).
     min_free_disk_gib: float = 90.0
+    #: Shared by every arm. See configs/base.yaml — batch size perturbs bf16
+    #: numerics through padding, so it is pinned rather than left to the caller.
+    eval_batch_size: int = 8
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     paths: Paths = Field(default_factory=Paths)
 
@@ -124,6 +127,11 @@ def bootstrap_env(config: ProjectConfig | None = None) -> Paths:
     os.environ.setdefault("TORCH_HOME", str(paths.artifacts / "torch"))
     # Tokenizer threads fight the dataloader workers and make latency noisy.
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
+    # Reduce allocator fragmentation. Long runs interleave a large frozen model
+    # with repeated smaller allocations, which strands reserved-but-unusable
+    # blocks; expandable segments let the allocator give them back.
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
     # Fall back to plain HTTPS transfer. The Xet CDN returned intermittent 500s
     # for Qwen3-8B shards from this network and huggingface_hub raises rather

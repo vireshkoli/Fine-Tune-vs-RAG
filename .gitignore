@@ -50,3 +50,6 @@ wandb/
 
 # Generated figures are committed (results/figures/*.png); their caches are not.
 results/**/.cache/
+
+# Run logs — transient, and they can contain absolute paths.
+logs/

@@ -13,7 +13,7 @@ repo_id: Qwen/Qwen3-8B
 revision: b968826d9c46dd6066d109eabc6255188de91218  # pragma: allowlist secret
 
 dtype: bfloat16
-device: 0
+device: 1
 
 # Qwen3 is a hybrid reasoning model. Thinking is disabled for every arm because
 # variable-length traces would confound both latency and cost measurement.
