@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-gpu setup-check lint fmt type test check splits verify-splits clean-pyc
+.PHONY: help setup setup-gpu setup-check lint fmt type test check splits verify-splits index index-estimate eval clean-pyc
 
 PY := uv run
 
@@ -37,6 +37,19 @@ splits:  ## Build and freeze the evaluation splits (needs network)
 
 verify-splits:  ## Rebuild and prove the split still matches the committed manifest
 	$(PY) python scripts/01_build_splits.py --verify
+
+CORPUS ?= parity
+ARM ?= base
+SEED ?=
+
+index:  ## Build a retrieval index (CORPUS=parity|external)
+	$(PY) python scripts/02_build_index.py --corpus $(CORPUS)
+
+index-estimate:  ## Report corpus size and projected embedding GPU-hours, then stop
+	$(PY) python scripts/02_build_index.py --corpus $(CORPUS) --estimate-only
+
+eval:  ## Evaluate one arm on the frozen test set (ARM=base|rag-external|…)
+	$(PY) python scripts/03_eval_arm.py --arm $(ARM) $(if $(SEED),--seed $(SEED),)
 
 clean-pyc:  ## Remove Python caches (never touches .artifacts/)
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} + 2>/dev/null || true

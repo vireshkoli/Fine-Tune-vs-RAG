@@ -21,7 +21,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from fvr.data.schema import Prediction, Question
+from fvr.data.schema import Passage, Prediction, Question
+from fvr.eval.device import assert_device_exclusive
+from fvr.eval.groundedness import GroundednessSummary, score_groundedness
 from fvr.eval.latency import LatencyRecorder, LatencySummary
 from fvr.eval.metrics import bootstrap_interval, minimum_detectable_effect
 from fvr.inference.arms import Arm
@@ -88,6 +90,16 @@ class ArmResult:
     environment: dict[str, Any]
     minimum_detectable_effect: float
     per_subject: dict[str, dict[str, float]] = field(default_factory=dict)
+    #: Retrieval diagnostics. ``None`` for arms that do not retrieve.
+    groundedness: dict[str, float | int] | None = None
+    retrieval_info: dict[str, Any] | None = None
+    #: Whether the timed device was exclusively ours. A contended run is still
+    #: recorded, flagged, so a reader never has to guess why latency looks odd.
+    device_occupancy: dict[str, object] | None = None
+    #: Scoring batch size. Recorded because it is not inert: padding differs with
+    #: batch size, and in bf16 that moves a couple of borderline items. Observed
+    #: 0.566 at batch 16 versus 0.568 at batch 8 on an otherwise identical run.
+    batch_size: int = 8
 
     def to_json(self) -> dict[str, Any]:
         return {
@@ -100,6 +112,10 @@ class ArmResult:
             "minimum_detectable_effect": self.minimum_detectable_effect,
             "latency": self.latency.as_dict(),
             "per_subject": self.per_subject,
+            "groundedness": self.groundedness,
+            "retrieval": self.retrieval_info,
+            "device_occupancy": self.device_occupancy,
+            "batch_size": self.batch_size,
             "model": self.model_info,
             "environment": self.environment,
             "predictions": [
@@ -144,6 +160,8 @@ def run_arm(
     batch_size: int = 8,
     latency_samples: int = DEFAULT_LATENCY_SAMPLES,
     retrieve: Any = None,
+    retrieval_info: dict[str, Any] | None = None,
+    device: int = 0,
     progress: Any = None,
 ) -> ArmResult:
     """Score every question, then time a subset one at a time.
@@ -152,13 +170,25 @@ def run_arm(
     the whole run affordable, but a batched wall-clock divided by batch size is
     not a latency a user would ever experience.
     """
-    prompts = [build_prompt(q, retrieve(q) if retrieve is not None else ()) for q in questions]
+    # Retrieval is batched up front rather than per item: embedding one query at
+    # a time leaves the GPU idle between calls and would inflate the arm's cost.
+    if retrieve is not None:
+        retrieved: list[list[Passage]] = []
+        for start in range(0, len(questions), batch_size):
+            retrieved.extend(retrieve(questions[start : start + batch_size]))
+    else:
+        retrieved = [[] for _ in questions]
+
+    prompts = [build_prompt(q, ctx) for q, ctx in zip(questions, retrieved, strict=True)]
 
     predictions: list[Prediction] = []
     for start in range(0, len(prompts), batch_size):
         chunk = prompts[start : start + batch_size]
-        for question, scored in zip(
-            questions[start : start + batch_size], engine.score_batch(chunk), strict=True
+        for question, context, scored in zip(
+            questions[start : start + batch_size],
+            retrieved[start : start + batch_size],
+            engine.score_batch(chunk),
+            strict=True,
         ):
             predictions.append(
                 Prediction(
@@ -168,10 +198,15 @@ def run_arm(
                     predicted_idx=scored.scores.predicted_idx,
                     option_logprobs=list(scored.scores.logprobs),
                     prompt_tokens=scored.prompt_tokens,
+                    retrieved=context,
                 )
             )
         if progress is not None:
             progress(min(start + batch_size, len(prompts)), len(prompts))
+
+    # Verify nothing else is resident before timing. Contention does not raise,
+    # it just makes p50/p95 quietly wrong, so the verdict is recorded either way.
+    occupancy = assert_device_exclusive(device)
 
     recorder = LatencyRecorder()
     for prompt in prompts[:latency_samples]:
@@ -182,6 +217,14 @@ def run_arm(
         result for p in predictions if (result := p.is_correct(by_id[p.question_id])) is not None
     ]
     interval = bootstrap_interval(correct, seed=seed)
+
+    grounding: dict[str, float | int] | None = None
+    if arm.uses_retrieval:
+        scores = [
+            score_groundedness(by_id[p.question_id], p.retrieved, p.predicted_idx)
+            for p in predictions
+        ]
+        grounding = GroundednessSummary.from_scores(scores).as_dict()
 
     return ArmResult(
         arm=arm.name,
@@ -197,4 +240,8 @@ def run_arm(
         environment=environment_fingerprint(),
         minimum_detectable_effect=minimum_detectable_effect(len(correct)),
         per_subject=_per_subject_accuracy(questions, predictions),
+        groundedness=grounding,
+        retrieval_info=retrieval_info,
+        device_occupancy=occupancy.as_dict(),
+        batch_size=batch_size,
     )
