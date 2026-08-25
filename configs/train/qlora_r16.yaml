@@ -1,0 +1,50 @@
+# Primary QLoRA configuration. Phase 7 sweeps rank and epochs against this.
+
+name: qlora-r16
+model_config_path: configs/model/qwen3-8b.yaml
+
+lora:
+  r: 16
+  alpha: 32          # the usual 2x r; alpha/r sets the effective adapter scale
+  dropout: 0.05
+  # Attention and MLP. Attention-only adapters underfit knowledge-heavy tasks
+  # because most factual capacity sits in the MLP blocks.
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+# 4-bit NF4 with double quantisation — the "Q" in QLoRA. ~5.5GB for an 8B base,
+# which is what keeps this reproducible on a 16GB card, not just on an A40.
+quantization: nf4
+
+learning_rate: 2.0e-4
+lr_scheduler: cosine
+warmup_ratio: 0.03
+weight_decay: 0.0
+max_grad_norm: 1.0
+
+epochs: 2.0
+per_device_batch_size: 4
+gradient_accumulation_steps: 4     # effective batch 16
+max_seq_length: 1024
+gradient_checkpointing: true
+
+# A random seeded subset of the ~179k clean train rows. Capped so a full run
+# fits in a few GPU-hours; the size is swept as an ablation rather than assumed
+# to be irrelevant.
+max_train_samples: 30000
+
+# Train on the answer letter followed by the explanation. The rag-parity index
+# serves exactly these explanations, so the fine-tune must see the same text for
+# "weights versus index" to be the only difference between the arms.
+include_explanation: true
+
+# Frequent enough that an interruption costs minutes. Training is assumed to
+# fail at least once, so this is a design parameter, not a default.
+save_steps: 200
+eval_steps: 200
+logging_steps: 10
+save_total_limit: 3
+metric_for_best_model: eval_loss
+
+seed: 42
+optim: paged_adamw_8bit
+report_to: wandb

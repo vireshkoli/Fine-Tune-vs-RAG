@@ -1,0 +1,36 @@
+# 20-step smoke test. Proves the pipeline end to end — data, adapters, loss,
+# checkpointing, resumption — without spending real GPU-hours. Runs in CI on a
+# manually triggered workflow.
+
+name: qlora-smoke
+model_config_path: configs/model/qwen3-8b.yaml
+
+lora:
+  r: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: ["q_proj", "v_proj"]
+
+quantization: nf4
+
+learning_rate: 2.0e-4
+lr_scheduler: constant
+warmup_ratio: 0.0
+epochs: 1.0
+per_device_batch_size: 2
+gradient_accumulation_steps: 1
+max_seq_length: 512
+gradient_checkpointing: true
+
+max_train_samples: 128
+include_explanation: true
+
+save_steps: 10
+eval_steps: 10
+logging_steps: 1
+save_total_limit: 2
+metric_for_best_model: eval_loss
+
+seed: 42
+optim: paged_adamw_8bit
+report_to: none

@@ -98,6 +98,10 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+# Entry points must pin CUDA_VISIBLE_DEVICES and the HF cache before torch or
+# huggingface_hub is imported, so their imports genuinely cannot all sit at the
+# top of the file. See the comment at the head of scripts/04_train.py.
+"scripts/*" = ["E402"]
 
 # ----------------------------------------------------------------------------- mypy
 [tool.mypy]
@@ -121,7 +125,7 @@ ignore_missing_imports = true
 # ship unannotated callables, so strict mode rejects every call into them.
 # Scoped to this single file rather than relaxed globally — everything else,
 # including all eval and data code, stays fully strict.
-module = ["fvr.models.loader"]
+module = ["fvr.models.loader", "fvr.train.qlora"]
 disallow_untyped_calls = false
 
 # --------------------------------------------------------------------------- pytest

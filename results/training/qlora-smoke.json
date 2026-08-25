@@ -1,0 +1,13 @@
+{
+  "output_dir": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/qlora-smoke",
+  "train_gpu_seconds": 592.1310124099255,
+  "final_step": 64,
+  "train_loss": 1.7060467228293419,
+  "best_eval_loss": 1.3172945976257324,
+  "resumed_from": null,
+  "n_train": 128,
+  "n_eval": 500,
+  "trainable_params": 3833856,
+  "total_params": 4721685504,
+  "trainable_pct": 0.08119676748381757
+}
