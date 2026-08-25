@@ -23,6 +23,7 @@ dependencies = [
     "scipy>=1.14",
     # Data loading and cleaning are CPU work and must stay testable without torch.
     "datasets>=3.2",
+    "matplotlib>=3.11.1",
 ]
 
 [project.optional-dependencies]
@@ -117,6 +118,7 @@ plugins = ["pydantic.mypy"]
 module = [
     "torch.*", "transformers.*", "peft.*", "trl.*", "bitsandbytes.*",
     "datasets.*", "faiss.*", "sentence_transformers.*", "wandb.*", "vllm.*",
+    "matplotlib.*",
 ]
 ignore_missing_imports = true
 
