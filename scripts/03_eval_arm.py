@@ -83,7 +83,10 @@ def main() -> int:
         f"Loading [cyan]{model_config.repo_id}[/] @ {model_config.revision[:12]} "
         f"({model_config.dtype}, thinking={model_config.enable_thinking})…"
     )
-    loaded = load_base_model(model_config)
+    # Merging folds LoRA weights into the base *in place*, so a merged run must
+    # never come from the shared cache — a later base-arm run would otherwise
+    # receive the fine-tuned weights and be silently wrong.
+    loaded = load_base_model(model_config, use_cache=not args.adapter)
     if args.adapter:
         from fvr.models.loader import attach_adapter
 

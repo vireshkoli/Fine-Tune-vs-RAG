@@ -21,15 +21,22 @@ warmup_ratio: 0.03
 weight_decay: 0.0
 max_grad_norm: 1.0
 
-epochs: 2.0
+# One pass over 30k unique rows rather than two passes over 15k: the compute is
+# identical and more unique data beats repetition for knowledge acquisition.
+# Epochs are swept as a Phase 7 ablation rather than assumed.
+epochs: 1.0
 per_device_batch_size: 4
 gradient_accumulation_steps: 4     # effective batch 16
 max_seq_length: 1024
+# Measured, not assumed. Turning this OFF on a free 46GB A40 was *slower*
+# (33.4 s/step vs 9.8) and still OOM'd at step 9: the activation memory it saves
+# matters more than the recomputation it costs. Also what keeps the recipe
+# runnable on a 16GB card.
 gradient_checkpointing: true
 
-# A random seeded subset of the ~179k clean train rows. Capped so a full run
-# fits in a few GPU-hours; the size is swept as an ablation rather than assumed
-# to be irrelevant.
+# A random seeded subset of the ~179k clean train rows. At a measured 9.8 s/step
+# on an exclusive A40, 30k rows at effective batch 16 is 1,875 steps ~= 5.1
+# GPU-hours, which fits the per-run budget with room for three seeds.
 max_train_samples: 30000
 
 # Train on the answer letter followed by the explanation. The rag-parity index
@@ -47,4 +54,4 @@ metric_for_best_model: eval_loss
 
 seed: 42
 optim: paged_adamw_8bit
-report_to: wandb
+report_to: none

@@ -74,6 +74,9 @@ class LoadedModel:
     #: Adapter path if one is attached, else None. Recorded in results so a run
     #: can never be ambiguous about which weights produced it.
     adapter_path: str | None = None
+    #: Whether the adapter was folded into the base weights. Recorded because it
+    #: changes latency by ~5x and therefore the whole cost comparison.
+    adapter_merged: bool = False
 
     @property
     def device(self) -> Any:
@@ -87,6 +90,7 @@ class LoadedModel:
             "dtype": self.config.dtype,
             "quantization": self.config.quantization,
             "adapter": self.adapter_path,
+            "adapter_merged": self.adapter_merged,
             "enable_thinking": self.config.enable_thinking,
         }
 
@@ -151,21 +155,43 @@ def load_base_model(config: ModelConfig, *, use_cache: bool = True) -> LoadedMod
     return loaded
 
 
-def attach_adapter(base: LoadedModel, adapter_path: str | Path) -> LoadedModel:
+def attach_adapter(
+    base: LoadedModel, adapter_path: str | Path, *, merge: bool = True
+) -> LoadedModel:
     """Attach a LoRA adapter to an already-loaded base.
 
     Deliberately wraps the *same* base object rather than reloading, so a
     fine-tuned arm is provably the identical starting weights plus an adapter.
+
+    ``merge`` folds the adapter into the base weights, and defaults on because
+    leaving it off corrupts the cost comparison. An unmerged adapter runs two
+    extra matmuls per target module per layer — measured here at **4.9x the p50
+    latency of the base arm on identical 113-token prompts**, which is pure
+    wrapper overhead, not knowledge. Anyone deploying a fine-tune merges it, so
+    measuring unmerged would overstate fine-tuning's marginal cost fivefold and
+    push the cost crossover far to the right — biasing the benchmark's central
+    conclusion against the fine-tuned arms.
+
+    Merging is only valid on an unquantised base: folding bf16 LoRA weights into
+    4-bit NF4 would have to dequantise first, changing what is being measured.
     """
     from peft import PeftModel
 
     model = PeftModel.from_pretrained(base.model, str(adapter_path))
+    if merge:
+        if base.config.quantization != "none":
+            raise ValueError(
+                f"refusing to merge into a {base.config.quantization} base: the merge would "
+                "silently dequantise and the measured model would not be the configured one"
+            )
+        model = model.merge_and_unload()
     model.eval()
     return LoadedModel(
         model=model,
         tokenizer=base.tokenizer,
         config=base.config,
         adapter_path=str(adapter_path),
+        adapter_merged=merge,
     )
 
 

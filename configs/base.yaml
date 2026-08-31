@@ -13,7 +13,7 @@ seed: 42
 # run overlap — it starts and tears down the judge around evaluation. What must
 # never happen is a latency measurement taken while anything else is resident,
 # which `assert_device_exclusive` now checks rather than assumes.
-inference_device: 1
+inference_device: 0
 judge_device: 1
 
 # The project needs ~74 GiB (37 judge + 15 base + indices + checkpoints).
