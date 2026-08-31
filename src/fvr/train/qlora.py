@@ -118,7 +118,11 @@ def train(
     from fvr.models.loader import load_base_model
 
     output_dir = Path(output_dir)
-    resume_from = str(latest_checkpoint(output_dir)) if resume else None
+    # str(None) is the string "None", which Trainer then treats as a real path
+    # and dies with "Can't find a valid checkpoint at None". Convert only when
+    # a checkpoint actually exists.
+    checkpoint = latest_checkpoint(output_dir) if resume else None
+    resume_from = str(checkpoint) if checkpoint is not None else None
 
     quantised = model_config.model_copy(update={"quantization": config.quantization})
     loaded = load_base_model(quantised, use_cache=False)

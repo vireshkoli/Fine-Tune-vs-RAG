@@ -266,3 +266,37 @@ class TestStats:
 
     def test_mean_target_chars_handles_empty(self) -> None:
         assert SFTStats().mean_target_chars == 0.0
+
+
+class TestResumeArgumentIsNeverTheStringNone:
+    """Regression guard for a bug that killed a launched training run.
+
+    ``str(latest_checkpoint(dir))`` yields the *string* ``"None"`` when no
+    checkpoint exists, and Trainer then treats it as a path and dies with
+    "Can't find a valid checkpoint at None". A fresh run must pass a real
+    ``None`` through.
+    """
+
+    def _resume_arg(self, output_dir: Path, *, resume: bool) -> str | None:
+        # Mirrors the expression in fvr.train.qlora.train().
+        checkpoint = latest_checkpoint(output_dir) if resume else None
+        return str(checkpoint) if checkpoint is not None else None
+
+    def test_fresh_directory_yields_real_none(self, tmp_path: Path) -> None:
+        assert self._resume_arg(tmp_path, resume=True) is None
+
+    def test_never_yields_the_literal_string(self, tmp_path: Path) -> None:
+        assert self._resume_arg(tmp_path, resume=True) != "None"
+
+    def test_existing_checkpoint_yields_its_path(self, tmp_path: Path) -> None:
+        (tmp_path / "checkpoint-400").mkdir()
+        arg = self._resume_arg(tmp_path, resume=True)
+        assert arg is not None and arg.endswith("checkpoint-400")
+
+    def test_resume_disabled_yields_none_even_with_checkpoints(self, tmp_path: Path) -> None:
+        (tmp_path / "checkpoint-400").mkdir()
+        assert self._resume_arg(tmp_path, resume=False) is None
+
+    def test_the_source_does_not_stringify_unconditionally(self) -> None:
+        source = (PROJECT_ROOT / "src" / "fvr" / "train" / "qlora.py").read_text(encoding="utf-8")
+        assert "str(latest_checkpoint(" not in source
