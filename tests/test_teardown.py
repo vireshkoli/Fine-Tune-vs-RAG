@@ -96,6 +96,14 @@ class TestPlan:
             assert target.is_relative_to(paths.artifacts.resolve())
 
     def test_plan_lists_the_shared_cache_as_protected(self) -> None:
+        """Only meaningful where a shared cache exists — a fresh runner has none.
+
+        The environment-independent guarantee is that the cache is *undeletable*
+        (TestDenylist); the plan only enumerates directories that are present.
+        """
+        shared = Path.home() / ".cache" / "huggingface"
+        if not shared.exists():
+            pytest.skip("no shared HF cache on this machine")
         protected = {str(p) for p, _ in plan_teardown().protected}
         assert any(".cache/huggingface" in p for p in protected)
 
