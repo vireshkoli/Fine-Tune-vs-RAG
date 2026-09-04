@@ -19,6 +19,7 @@ import sys
 from rich.console import Console
 from rich.table import Table
 
+from fvr.ops.hub import ADAPTER_FILES, HubTargets
 from fvr.ops.teardown import missing_recoverable_artifacts
 
 console = Console()
@@ -28,6 +29,67 @@ def _git(*args: str) -> str:
     return subprocess.run(
         ["git", *args], capture_output=True, text=True, timeout=30, check=False
     ).stdout.strip()
+
+
+def _hub_checks() -> list[tuple[str, bool, str]]:
+    """Ask the Hub whether the artifacts that only exist there are really there.
+
+    The adapter cost five GPU-hours and lives in ``.artifacts/``, which is the
+    directory teardown deletes. A local copy proves nothing, so this queries the
+    Hub rather than the filesystem — and a network failure is reported as a
+    failure, never assumed to be a pass.
+    """
+    from fvr.config import Secrets
+
+    token = Secrets().hf_token
+    if not token:
+        return [("adapter pushed to Hub", False, "no HF_TOKEN in .env; cannot verify")]
+
+    try:
+        from huggingface_hub import HfApi
+
+        api = HfApi(token=token)
+        targets = HubTargets(namespace=str(api.whoami()["name"]))
+    except Exception as exc:  # any failure to reach the Hub means 'unverified'
+        return [("adapter pushed to Hub", False, f"could not reach the Hub: {exc}")]
+
+    checks: list[tuple[str, bool, str]] = []
+
+    try:
+        files = set(api.list_repo_files(targets.adapter_repo, repo_type="model"))
+    except Exception as exc:
+        checks.append(("adapter pushed to Hub", False, f"{targets.adapter_repo}: {exc}"))
+    else:
+        # Weights alone are not enough: an adapter published without its card
+        # is a medical model on the internet with no safety statement.
+        required = {"adapter_config.json", "adapter_model.safetensors", "README.md"}
+        missing = sorted(required - files)
+        checks.append(
+            (
+                "adapter pushed to Hub",
+                not missing,
+                f"{targets.adapter_repo}: {len(files & set(ADAPTER_FILES)) + 1} file(s)"
+                if not missing
+                else f"missing {missing}",
+            )
+        )
+
+    try:
+        space_files = set(api.list_repo_files(targets.space_repo, repo_type="space"))
+    except Exception as exc:
+        checks.append(("demo Space published", False, f"{targets.space_repo}: {exc}"))
+    else:
+        needed = {"app.py", "demo.py", "requirements.txt", "precomputed/responses.json"}
+        missing_space = sorted(needed - space_files)
+        checks.append(
+            (
+                "demo Space published",
+                not missing_space,
+                targets.space_repo if not missing_space else f"missing {missing_space}",
+            )
+        )
+
+    return checks
 
 
 def main() -> int:
@@ -86,14 +148,7 @@ def main() -> int:
         )
     )
 
-    adapter = paths.checkpoints / "qlora-r16" / "adapter"
-    checks.append(
-        (
-            "adapter pushed to Hub",
-            False,
-            f"local only at {adapter} — push before teardown or the fine-tune is lost",
-        )
-    )
+    checks.extend(_hub_checks())
 
     table = Table(title="Recoverability", show_lines=False)
     table.add_column("Check", style="bold")

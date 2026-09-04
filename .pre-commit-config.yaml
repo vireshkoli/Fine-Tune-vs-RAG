@@ -26,11 +26,13 @@ repos:
     hooks:
       - id: detect-secrets
         # .env.example holds placeholders that look like tokens by design.
-        # results/*.json are generated artifacts whose whole point is SHA-256
-        # split digests and pinned dataset revisions — high-entropy hex by
-        # construction, and written only by our own scripts from eval output,
-        # so no credential can reach them. Everything else is still scanned.
-        exclude: '^(\.env\.example|uv\.lock|results/.*\.json)$'
+        # results/*.json and the Space's precomputed payload are generated
+        # artifacts whose whole point is SHA-256 split digests and pinned
+        # dataset/model revisions — high-entropy hex by construction, and
+        # written only by our own scripts from eval output, so no credential can
+        # reach them. Named exactly rather than excluding app/, so a real secret
+        # committed anywhere else under app/ is still caught.
+        exclude: '^(\.env\.example|uv\.lock|results/.*\.json|app/precomputed/responses\.json)$'
 
   - repo: local
     hooks:

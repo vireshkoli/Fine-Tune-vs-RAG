@@ -1,0 +1,3319 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "split_sha256": "9aac1bc01a70dcb6a592fa5a7730274a61a0fdf8553b533026c737c206301f90",
+    "n_test_items": 1000,
+    "git_sha": "f8dceb7868a04c4f62e0b31c3e755b211cbb4a6f",
+    "model": "Qwen/Qwen3-8B",
+    "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+    "seed": 42,
+    "note": "Every answer here was produced by a real evaluated run over the frozen test set. Nothing in this file is generated at demo time."
+  },
+  "arms": [
+    {
+      "name": "base",
+      "description": "Base model, zero-shot. The floor.",
+      "headline": true,
+      "corpus": "none",
+      "uses_adapter": false,
+      "accuracy": 0.568,
+      "ci_95": [
+        0.538,
+        0.599
+      ],
+      "p50_ms": 103.4,
+      "p95_ms": 117.9,
+      "prompt_tokens": 113.0,
+      "groundedness": null
+    },
+    {
+      "name": "rag-external",
+      "description": "Retrieval over the external corpus, base weights unchanged.",
+      "headline": true,
+      "corpus": "external",
+      "uses_adapter": false,
+      "accuracy": 0.567,
+      "ci_95": [
+        0.536,
+        0.598
+      ],
+      "p50_ms": 178.6,
+      "p95_ms": 194.5,
+      "prompt_tokens": 737.9,
+      "groundedness": {
+        "n": 1000,
+        "retrieval_hit_rate": 0.454,
+        "mean_gold_coverage": 0.530653293928294,
+        "mean_predicted_coverage": 0.5697882145632145,
+        "grounded_rate": 0.635,
+        "mean_passages": 4.992,
+        "mean_context_chars": 2564.653
+      }
+    },
+    {
+      "name": "qlora",
+      "description": "QLoRA fine-tune, no retrieval.",
+      "headline": true,
+      "corpus": "none",
+      "uses_adapter": true,
+      "accuracy": 0.629,
+      "ci_95": [
+        0.6,
+        0.659
+      ],
+      "p50_ms": 101.9,
+      "p95_ms": 111.9,
+      "prompt_tokens": 113.0,
+      "groundedness": null
+    },
+    {
+      "name": "qlora-rag",
+      "description": "Fine-tune plus retrieval — the combination most write-ups skip.",
+      "headline": true,
+      "corpus": "external",
+      "uses_adapter": true,
+      "accuracy": 0.614,
+      "ci_95": [
+        0.584,
+        0.644
+      ],
+      "p50_ms": 178.7,
+      "p95_ms": 195.4,
+      "prompt_tokens": 737.9,
+      "groundedness": {
+        "n": 1000,
+        "retrieval_hit_rate": 0.454,
+        "mean_gold_coverage": 0.530653293928294,
+        "mean_predicted_coverage": 0.5608304584304584,
+        "grounded_rate": 0.628,
+        "mean_passages": 4.992,
+        "mean_context_chars": 2564.653
+      }
+    },
+    {
+      "name": "rag-parity",
+      "description": "Diagnostic: retrieves the same text the fine-tune trained on.",
+      "headline": false,
+      "corpus": "parity",
+      "uses_adapter": false,
+      "accuracy": 0.67,
+      "ci_95": [
+        0.641,
+        0.699
+      ],
+      "p50_ms": 170.7,
+      "p95_ms": 192.9,
+      "prompt_tokens": 656.3,
+      "groundedness": {
+        "n": 1000,
+        "retrieval_hit_rate": 0.57,
+        "mean_gold_coverage": 0.6272632006882006,
+        "mean_predicted_coverage": 0.6587382006882007,
+        "grounded_rate": 0.725,
+        "mean_passages": 4.949,
+        "mean_context_chars": 2106.525
+      }
+    },
+    {
+      "name": "qlora-rag-parity",
+      "description": "Diagnostic: fine-tune plus the parity index.",
+      "headline": false,
+      "corpus": "parity",
+      "uses_adapter": true,
+      "accuracy": 0.711,
+      "ci_95": [
+        0.683,
+        0.739
+      ],
+      "p50_ms": 170.6,
+      "p95_ms": 193.0,
+      "prompt_tokens": 656.3,
+      "groundedness": {
+        "n": 1000,
+        "retrieval_hit_rate": 0.57,
+        "mean_gold_coverage": 0.6272632006882006,
+        "mean_predicted_coverage": 0.6552683594183594,
+        "grounded_rate": 0.723,
+        "mean_passages": 4.949,
+        "mean_context_chars": 2106.525
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "d3629a0f-c519-46c6-bb27-a33adc0ac0fc",
+      "question": "Additional period required for enamel calcification after eruption into oral cavity",
+      "options": [
+        "1 yr",
+        "2 yr",
+        "3 yr",
+        "4 yr"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Dental",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.6685,
+          "prompt_tokens": 98
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.3748,
+          "prompt_tokens": 761
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.4324,
+          "prompt_tokens": 666
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.3956,
+          "prompt_tokens": 98
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.7467,
+          "prompt_tokens": 666
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4788,
+          "prompt_tokens": 761
+        }
+      }
+    },
+    {
+      "id": "a2f3d532-e063-4203-bba6-7f590a162dc7",
+      "question": "Hutchinson's triad includes?",
+      "options": [
+        "Interstitial keratitis, malformed molars, conductive deafness",
+        "Interstitial keratitis, malformed molars, sensorineural deafness",
+        "Conductive deafness, malformed incisors, interstitial keratitis",
+        "Interstitial keratitis, malformed molars, conductive deafness"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Pediatrics",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9996,
+          "prompt_tokens": 134
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.6283,
+          "prompt_tokens": 472
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4619,
+          "prompt_tokens": 824
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4318,
+          "prompt_tokens": 134
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9997,
+          "prompt_tokens": 824
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.8506,
+          "prompt_tokens": 472
+        }
+      }
+    },
+    {
+      "id": "38810794-2735-4239-b36f-d9a509a2997f",
+      "question": "According to the WHO definition of hearing loss, what is the value to classify as profound hearing loss?",
+      "options": [
+        "61-71 dB",
+        ">81 dB",
+        ">91 dB",
+        ">101 dB"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "ENT",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.7773,
+          "prompt_tokens": 113
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9613,
+          "prompt_tokens": 652
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.812,
+          "prompt_tokens": 756
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.8039,
+          "prompt_tokens": 113
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 756
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 652
+        }
+      }
+    },
+    {
+      "id": "a13b245e-56b4-43cd-84fe-1c83ac2badeb",
+      "question": "All of the following are true about augmentation of labor except:",
+      "options": [
+        "Twin pregnancy precludes the use of oxytocin",
+        "Amniotomy decreases the need for oxytocin use",
+        "Methods of augmentation does not increase the risk of operational management",
+        "Associated with a risk of uterine hyper stimulation"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Gynaecology & Obstetrics",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.6776,
+          "prompt_tokens": 127
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.3788,
+          "prompt_tokens": 753
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9402,
+          "prompt_tokens": 686
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.5012,
+          "prompt_tokens": 127
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9385,
+          "prompt_tokens": 686
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9239,
+          "prompt_tokens": 753
+        }
+      }
+    },
+    {
+      "id": "418ea8f5-7225-4daa-9fa7-2cf9724b9a8b",
+      "question": "A patient reported with Distort-oclusal amalgam restoration in 47 & complaints of sticking of food in interproximal area. Most common reason is?",
+      "options": [
+        "Broad contact area Buccolingually",
+        "Wide contact area occlugingivaly",
+        "Contact area too occlusively",
+        "Contact area too gingivally"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Dental",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.5121,
+          "prompt_tokens": 133
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.5562,
+          "prompt_tokens": 725
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.351,
+          "prompt_tokens": 747
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.306,
+          "prompt_tokens": 133
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.7096,
+          "prompt_tokens": 747
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9981,
+          "prompt_tokens": 725
+        }
+      }
+    },
+    {
+      "id": "9251f6b9-8124-4f34-8936-c66761486357",
+      "question": "Following intracoronal bleaching immediate composite restoration required, what has to be done:",
+      "options": [
+        "Treat with catalase",
+        "Wait for 7 days is mandatory",
+        "Treat with H2O2 for 3 minutes",
+        "Not possible"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.5618,
+          "prompt_tokens": 114
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.7815,
+          "prompt_tokens": 539
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4129,
+          "prompt_tokens": 818
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4965,
+          "prompt_tokens": 114
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.982,
+          "prompt_tokens": 818
+        },
+        "rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 539
+        }
+      }
+    },
+    {
+      "id": "e0471ba9-d328-4924-b5e1-6d036b3005b6",
+      "question": "Caries tetralogy by Newburn includes the fourth factor, which is:",
+      "options": [
+        "Temperature.",
+        "Time.",
+        "Frequency.",
+        "Substrate."
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Dental",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.7594,
+          "prompt_tokens": 94
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.3432,
+          "prompt_tokens": 662
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.3896,
+          "prompt_tokens": 748
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.3682,
+          "prompt_tokens": 94
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9997,
+          "prompt_tokens": 748
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9997,
+          "prompt_tokens": 662
+        }
+      }
+    },
+    {
+      "id": "90e45b2e-7087-4390-8d01-75bde6ed9f71",
+      "question": "Treatment of diastema because of a thick labial frenum is done:",
+      "options": [
+        "After frenectomy",
+        "Before eruption of canines",
+        "After eruption of canines",
+        "Before frenectomy"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Dental",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9914,
+          "prompt_tokens": 105
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.6277,
+          "prompt_tokens": 649
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.6711,
+          "prompt_tokens": 755
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.332,
+          "prompt_tokens": 105
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9982,
+          "prompt_tokens": 755
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.7773,
+          "prompt_tokens": 649
+        }
+      }
+    },
+    {
+      "id": "f14171b9-69fe-4e7f-b004-40f2eb8d4b8c",
+      "question": "All of these are G2 phase blockers except:",
+      "options": [
+        "Etoposide",
+        "Topotecan",
+        "Paclitaxel",
+        "Daunorubicin"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Pharmacology",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9944,
+          "prompt_tokens": 100
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.6234,
+          "prompt_tokens": 744
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.6648,
+          "prompt_tokens": 789
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.5844,
+          "prompt_tokens": 100
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9525,
+          "prompt_tokens": 789
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9895,
+          "prompt_tokens": 744
+        }
+      }
+    },
+    {
+      "id": "43232539-be9b-4292-8d95-7f9c5d909153",
+      "question": "In arthroscopy, for TMJ adhesion lysis, the laser used is:",
+      "options": [
+        "Ho-Yag",
+        "Er-Yag",
+        "He-Ne",
+        "Argon"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Surgery",
+      "bucket": "both_broke_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9627,
+          "prompt_tokens": 102
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.306,
+          "prompt_tokens": 741
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4588,
+          "prompt_tokens": 788
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.443,
+          "prompt_tokens": 102
+        },
+        "rag-external": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9994,
+          "prompt_tokens": 788
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9991,
+          "prompt_tokens": 741
+        }
+      }
+    },
+    {
+      "id": "3e661f15-9a34-4c14-b4ff-7bac9c57b6be",
+      "question": "2 years female has been successfully treated for urinary tract infection. Next step in management is :",
+      "options": [
+        "Do nothing",
+        "Ultrasound",
+        "Ultrasound + DMSA scan",
+        "6 monthly culture sensitivity"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Pediatrics",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 107
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.577,
+          "prompt_tokens": 605
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.7891,
+          "prompt_tokens": 726
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.7805,
+          "prompt_tokens": 107
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 726
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.852,
+          "prompt_tokens": 605
+        }
+      }
+    },
+    {
+      "id": "e995894b-0611-4ae2-ae1f-0d35025845ae",
+      "question": "Preferred drug for the treatment of uncomplicated grade 2 hypertension in a 48 year old man is",
+      "options": [
+        "Chlohalidone",
+        "Triamterene",
+        "Spironolactone",
+        "Furosemide"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Pharmacology",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.5622,
+          "prompt_tokens": 113
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9745,
+          "prompt_tokens": 852
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.5055,
+          "prompt_tokens": 830
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.7734,
+          "prompt_tokens": 113
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.7478,
+          "prompt_tokens": 830
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 852
+        }
+      }
+    },
+    {
+      "id": "defe1c85-63fe-4a16-ba10-b3749975818a",
+      "question": "The cribriform plate connects:",
+      "options": [
+        "Nasal cavity and anterior cranial fossa",
+        "Nasal cavity and orbit",
+        "Nasal cavity and oral cavity",
+        "Anterior cranial fossa and orbit"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Anatomy",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.6224,
+          "prompt_tokens": 108
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.7333,
+          "prompt_tokens": 592
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.926,
+          "prompt_tokens": 751
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.5377,
+          "prompt_tokens": 108
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 751
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 592
+        }
+      }
+    },
+    {
+      "id": "851e771f-27db-4d5a-bae6-f787b1ef70f4",
+      "question": "Apical foramen is offcenter the root apex",
+      "options": [
+        "0.5-3 mm",
+        "0.5- 1 mm",
+        "1.5-4 mm",
+        "1.5-3 mm"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.6792,
+          "prompt_tokens": 113
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4703,
+          "prompt_tokens": 508
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.3746,
+          "prompt_tokens": 723
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4701,
+          "prompt_tokens": 113
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.731,
+          "prompt_tokens": 723
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.7769,
+          "prompt_tokens": 508
+        }
+      }
+    },
+    {
+      "id": "90d508fa-01fd-4b1f-811e-6fc4a0df7054",
+      "question": "Which of the following prevents fracture of MO amalgam:",
+      "options": [
+        "Beveling of axiopulpal line angle",
+        "Occlusal dovetails",
+        "Pin retained amalgam",
+        "Removal of unsupported enamel rods"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9756,
+          "prompt_tokens": 109
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.5918,
+          "prompt_tokens": 582
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.3901,
+          "prompt_tokens": 718
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.3332,
+          "prompt_tokens": 109
+        },
+        "rag-external": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.984,
+          "prompt_tokens": 718
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 582
+        }
+      }
+    },
+    {
+      "id": "e9b1a950-b8d0-4c61-8c49-97a7f246c212",
+      "question": "On applying pressure on angle of jaw while maintaining patent airway which nerve is likely to be damaged:",
+      "options": [
+        "6th",
+        "7th",
+        "4th",
+        "9th"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Anatomy",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9994,
+          "prompt_tokens": 105
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9597,
+          "prompt_tokens": 439
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.3757,
+          "prompt_tokens": 647
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4084,
+          "prompt_tokens": 105
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 647
+        },
+        "rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 439
+        }
+      }
+    },
+    {
+      "id": "5f65e5aa-a984-49bd-aad6-0292fa0e07d8",
+      "question": "On rubber dam application gingiva is seen protruding out of margins, it can be seen due to?",
+      "options": [
+        "Edematous gingival tissues",
+        "Holes paced too far apart",
+        "Using a light-weight dam",
+        "Holes placed too close together"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Dental",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9238,
+          "prompt_tokens": 117
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.359,
+          "prompt_tokens": 538
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.5593,
+          "prompt_tokens": 723
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.5573,
+          "prompt_tokens": 117
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9913,
+          "prompt_tokens": 723
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.622,
+          "prompt_tokens": 538
+        }
+      }
+    },
+    {
+      "id": "7c078d37-6c66-4225-aba1-9541ca7a4d95",
+      "question": "Which of the heart valve is most likely to be involved by Infective endocarditis following a septic abortion:",
+      "options": [
+        "Aortic valve.",
+        "Tricuspid valve.",
+        "Pulmonary valve.",
+        "Mitral valve."
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Medicine",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9707,
+          "prompt_tokens": 109
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.6722,
+          "prompt_tokens": 667
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.7131,
+          "prompt_tokens": 744
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.8725,
+          "prompt_tokens": 109
+        },
+        "rag-external": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 744
+        },
+        "rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9999,
+          "prompt_tokens": 667
+        }
+      }
+    },
+    {
+      "id": "599296cf-99e1-4a99-8322-cc24fef094a7",
+      "question": "A Rh-negative mother, who has Indirect Coombs Test (ICT), negative was given Anti-D during 28 weeks of pregnancy. Which of the following is the ideal one?",
+      "options": [
+        "Give another dose of Anti-D 72 hours postpartum depending on the baby blood group",
+        "Give another dose of Anti-D 72 hours postpartum irrespective of baby blood group",
+        "No need of additional dose since she is ICT negative",
+        "All of the above"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Gynaecology & Obstetrics",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.6792,
+          "prompt_tokens": 161
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.419,
+          "prompt_tokens": 904
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.3614,
+          "prompt_tokens": 833
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.5768,
+          "prompt_tokens": 161
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4192,
+          "prompt_tokens": 833
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9998,
+          "prompt_tokens": 904
+        }
+      }
+    },
+    {
+      "id": "6fe48790-f8f0-4c37-8dae-a76ddbac8a7a",
+      "question": "Normal anion gap metabolic acidosis seen in all except?",
+      "options": [
+        "Proximal A",
+        "Severe pancreatitis",
+        "Diarrhea",
+        "Salicylates poisoning"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Medicine",
+      "bucket": "both_fixed_it",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.8984,
+          "prompt_tokens": 100
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9604,
+          "prompt_tokens": 554
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9052,
+          "prompt_tokens": 764
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.8473,
+          "prompt_tokens": 100
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9981,
+          "prompt_tokens": 764
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9987,
+          "prompt_tokens": 554
+        }
+      }
+    },
+    {
+      "id": "36c7306a-d28b-4161-af0c-51fc925d3d4a",
+      "question": "Tooth eruption is due to",
+      "options": [
+        "Osteoclastic activity",
+        "Proliferation of cells at crypt",
+        "Exfoliation of primary tooth",
+        "Eruptive forces"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Dental",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 103
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.7693,
+          "prompt_tokens": 612
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.7542,
+          "prompt_tokens": 703
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.5586,
+          "prompt_tokens": 103
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 703
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 612
+        }
+      }
+    },
+    {
+      "id": "308573c6-93c7-47db-908e-14be06dc49e2",
+      "question": "All information must be explained in comprehensible, non medical terms preferable in local language about the diagnosis, nature of treatment, risks involved, prospects of success and alternative methods of treatment known",
+      "options": [
+        "Implied consent",
+        "Express consent",
+        "Informed consent",
+        "Substitute consent"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Dental",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 120
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9559,
+          "prompt_tokens": 650
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9583,
+          "prompt_tokens": 660
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9919,
+          "prompt_tokens": 120
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 660
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 650
+        }
+      }
+    },
+    {
+      "id": "752e362f-7162-4590-bb2f-fc6dc270a065",
+      "question": "Gene for ectodermal dysplasia with cleft lip and palate",
+      "options": [
+        "ED-1",
+        "GJB6",
+        "PVRL1",
+        "R P73"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Pathology",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 101
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.5452,
+          "prompt_tokens": 628
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.4697,
+          "prompt_tokens": 703
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.7868,
+          "prompt_tokens": 101
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9991,
+          "prompt_tokens": 703
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 628
+        }
+      }
+    },
+    {
+      "id": "731b980a-f36b-45bd-b1cf-538fd90541fc",
+      "question": "Paradoxical undressing seen in -",
+      "options": [
+        "Immersion syndrome",
+        "Heat cramps",
+        "Hypothermia",
+        "Heat exhaustion"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Forensic Medicine",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 92
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9902,
+          "prompt_tokens": 572
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4897,
+          "prompt_tokens": 661
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.647,
+          "prompt_tokens": 92
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9241,
+          "prompt_tokens": 661
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 572
+        }
+      }
+    },
+    {
+      "id": "d4208506-5d94-4956-8af6-8dd7c471ae8b",
+      "question": "What is the effective management of a dengue patient with warning signs without shock and haemorrhage-",
+      "options": [
+        "Steroids",
+        "Platelet transfusion",
+        "IV fluids",
+        "Antiviral"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Medicine",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 106
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9886,
+          "prompt_tokens": 700
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.8794,
+          "prompt_tokens": 770
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9575,
+          "prompt_tokens": 106
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 770
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 700
+        }
+      }
+    },
+    {
+      "id": "dc3b4878-5fcb-4cd0-b31d-594a5320655a",
+      "question": "Which of the following is not used in heart failure?",
+      "options": [
+        "Metoprolol",
+        "Trimetazidine",
+        "Sacubitril",
+        "Nesiritide"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Pharmacology",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9998,
+          "prompt_tokens": 99
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9201,
+          "prompt_tokens": 509
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9346,
+          "prompt_tokens": 726
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9098,
+          "prompt_tokens": 99
+        },
+        "rag-external": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 726
+        },
+        "rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 509
+        }
+      }
+    },
+    {
+      "id": "8798d2af-fc67-4463-9098-f105b3f4b458",
+      "question": "Alginate at 20 degrees, the gel is formed in",
+      "options": [
+        "3-4 mins.",
+        "6-8 mins.",
+        "15-16 mins.",
+        "1-2 min."
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9859,
+          "prompt_tokens": 109
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.725,
+          "prompt_tokens": 543
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.2801,
+          "prompt_tokens": 840
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.3819,
+          "prompt_tokens": 109
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 840
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9914,
+          "prompt_tokens": 543
+        }
+      }
+    },
+    {
+      "id": "c1e4be05-7faa-4d6a-9d3a-5c825129daaf",
+      "question": "The lag phase of tooth movement usually lasts for:",
+      "options": [
+        "2-3 mins",
+        "2-3 hrs",
+        "2-3 day",
+        "2-3 weeks"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Dental",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 103
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.6952,
+          "prompt_tokens": 576
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.7285,
+          "prompt_tokens": 720
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.6739,
+          "prompt_tokens": 103
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 720
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 576
+        }
+      }
+    },
+    {
+      "id": "595b0c16-d612-4873-b98a-fc848c527b77",
+      "question": "Treatment of acute herpetic gingivostomatitis include :",
+      "options": [
+        "Corticosteroids to reduce inflammation",
+        "Penicillin",
+        "Local antibiotic application",
+        "None of the above"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Dental",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 103
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.6061,
+          "prompt_tokens": 801
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4283,
+          "prompt_tokens": 676
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.8739,
+          "prompt_tokens": 103
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 676
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 801
+        }
+      }
+    },
+    {
+      "id": "33a697bc-627a-4a24-b381-19c181fcdded",
+      "question": "Method of choice for a New born child not passing urine for 36 hours :",
+      "options": [
+        "Ultrasound of kidney & bladder",
+        "CT Scan",
+        "Cystoscopy",
+        "X–ray pelvis"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Pediatrics",
+      "bucket": "everyone_right",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 107
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.8293,
+          "prompt_tokens": 699
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.8838,
+          "prompt_tokens": 737
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9434,
+          "prompt_tokens": 107
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 737
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 699
+        }
+      }
+    },
+    {
+      "id": "1caf6e69-ee58-47fd-8e04-6f736055365c",
+      "question": "All are true about trauma from occlusion except",
+      "options": [
+        "Trauma to Marginalized gingiva",
+        "Reversible",
+        "Reduction in height of alveolar crest",
+        "No pocket"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.4892,
+          "prompt_tokens": 103
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.7595,
+          "prompt_tokens": 523
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.5442,
+          "prompt_tokens": 742
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.4338,
+          "prompt_tokens": 103
+        },
+        "rag-external": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.8012,
+          "prompt_tokens": 742
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.7198,
+          "prompt_tokens": 523
+        }
+      }
+    },
+    {
+      "id": "c11f2ef3-043b-4b7a-856e-1bd527cb4d7a",
+      "question": "A patient with a history of fall after hypoglycemic episode presents with pain in bilateral preauricular region and deviation of the mandible to right side on mouth opening, probable diagnosis will be",
+      "options": [
+        "Fracture of right condyle",
+        "Fracture of left condyle",
+        "Dislocation of left condyle",
+        "Dislocation of both condyles"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Surgery",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.5622,
+          "prompt_tokens": 140
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.3608,
+          "prompt_tokens": 712
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.306,
+          "prompt_tokens": 742
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4466,
+          "prompt_tokens": 140
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.594,
+          "prompt_tokens": 742
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.985,
+          "prompt_tokens": 712
+        }
+      }
+    },
+    {
+      "id": "059b7c1c-bc8d-499d-ba18-42f173fc6501",
+      "question": "In a patient with dengue hemorrhagic fever, which of the following is most important to monitor?",
+      "options": [
+        "Hemoglobin",
+        "TLC",
+        "Platelet count",
+        "Hematocrit"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Medicine",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 104
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.7497,
+          "prompt_tokens": 761
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.51,
+          "prompt_tokens": 809
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9549,
+          "prompt_tokens": 104
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 809
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 761
+        }
+      }
+    },
+    {
+      "id": "4f2920dd-315c-4f5a-9208-80a4c443ceab",
+      "question": "A 50 years old lady, who has a known diagnosis of bronchial asthma, presented to the AIIMS emergency with complaints of severe breathlessness, diaphoresis and wheezing. On examination, you find that the patient is conscious with a respiratory rate of 30 per minute, blood pressure of 96/64 mm Hg and a pulse rate of 144 per minute. An arterial blood gas analysis showed a pH of 7.2, p02 of 50 mm Hg and pCO, of 70 mm Hg. How will you manage the patient?",
+      "options": [
+        "Ventilation with continuous positive airway pressure",
+        "Oxygen supplementation by nasal mask",
+        "Mechanical ventilation with controlled ventilation",
+        "Intubation"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Medicine",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9975,
+          "prompt_tokens": 223
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.5889,
+          "prompt_tokens": 935
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.4628,
+          "prompt_tokens": 964
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.46,
+          "prompt_tokens": 223
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9948,
+          "prompt_tokens": 964
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9988,
+          "prompt_tokens": 935
+        }
+      }
+    },
+    {
+      "id": "f477ffc3-2257-415b-b80b-82203647a233",
+      "question": "Shape of the central groove in Mandibular 2nd premolar is",
+      "options": [
+        "Y shaped",
+        "H shaped",
+        "U shaped",
+        "All of the above"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Dental",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9995,
+          "prompt_tokens": 99
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9202,
+          "prompt_tokens": 440
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.323,
+          "prompt_tokens": 838
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.359,
+          "prompt_tokens": 99
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9815,
+          "prompt_tokens": 838
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 440
+        }
+      }
+    },
+    {
+      "id": "86e26dc5-2f48-45b1-82df-b14ffbc11fcb",
+      "question": "Which is the most common site for congenital cholesteatoma",
+      "options": [
+        "Anterior superior quadrant of tympanic membrane",
+        "Posterior superior quadrant of tympanic membrane",
+        "Anterior inferior quadrant of tympanic membrane.",
+        "posterior inferior quadrant of tympanic membrane"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "ENT",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 119
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.7823,
+          "prompt_tokens": 697
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.3941,
+          "prompt_tokens": 839
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4565,
+          "prompt_tokens": 119
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 839
+        },
+        "rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 697
+        }
+      }
+    },
+    {
+      "id": "9adb4841-8e99-4f24-8f3e-54c8d169f62b",
+      "question": "Lesion of the marked structure affects all EXCEPT (AIIMS May 2019)",
+      "options": [
+        "Superior rectus",
+        "Superior oblique",
+        "Inferior oblique",
+        "Medial rectus"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Anatomy",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9946,
+          "prompt_tokens": 107
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.4918,
+          "prompt_tokens": 420
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.5053,
+          "prompt_tokens": 727
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.6239,
+          "prompt_tokens": 107
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9776,
+          "prompt_tokens": 727
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9986,
+          "prompt_tokens": 420
+        }
+      }
+    },
+    {
+      "id": "ef314f7b-421d-42bd-8878-4cd6abfc59bc",
+      "question": "Silicate cement is indicated in:",
+      "options": [
+        "Mouth breathers",
+        "Patients with high caries index",
+        "In the restoration of posterior tooth",
+        "None of the above"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Dental",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 99
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.6524,
+          "prompt_tokens": 532
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4451,
+          "prompt_tokens": 669
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.3221,
+          "prompt_tokens": 99
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9981,
+          "prompt_tokens": 669
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9998,
+          "prompt_tokens": 532
+        }
+      }
+    },
+    {
+      "id": "fd188bc0-c100-44ae-bd1e-ef51e94e6425",
+      "question": "False about enamel rods is",
+      "options": [
+        "They are perpendicular to tooth surface",
+        "They are parallel to each other",
+        "Diameter of enamel rods is 30micrometer at DEJ",
+        "Diameter of enamel rod is 5 micrometer at DEJ"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Dental",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9999,
+          "prompt_tokens": 116
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.4183,
+          "prompt_tokens": 555
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.4202,
+          "prompt_tokens": 715
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.4699,
+          "prompt_tokens": 116
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 715
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.972,
+          "prompt_tokens": 555
+        }
+      }
+    },
+    {
+      "id": "959f8a7b-ea3c-40f9-a6a3-f90248f7e8d2",
+      "question": "Tachycardia in a patient in shock is response to:",
+      "options": [
+        "Hypotension",
+        "Vasoconstriction",
+        "CNS anoxia",
+        "Anxiety"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Surgery",
+      "bucket": "everyone_wrong",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9999,
+          "prompt_tokens": 99
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.7356,
+          "prompt_tokens": 585
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.7724,
+          "prompt_tokens": 735
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4197,
+          "prompt_tokens": 99
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 735
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9994,
+          "prompt_tokens": 585
+        }
+      }
+    },
+    {
+      "id": "e584f190-0cb1-4ef7-9e2a-e4f0ccc8e01b",
+      "question": "Cranial nerve that is not involved in olfaction:-",
+      "options": [
+        "Glossopharyngeal",
+        "Vagus",
+        "Hypoglossal",
+        "Trigeminal"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "ENT",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9997,
+          "prompt_tokens": 101
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.5444,
+          "prompt_tokens": 490
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.8828,
+          "prompt_tokens": 641
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.4603,
+          "prompt_tokens": 101
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.982,
+          "prompt_tokens": 641
+        },
+        "rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 490
+        }
+      }
+    },
+    {
+      "id": "849108f1-8775-44ab-982d-c8907f399efc",
+      "question": "A 16-year old girl was brought with primary amenorrhea. Her mother mentioned that she started developing breast at the age of 12. She was prescribed OCPs 2 years back by a doctor with no effect. She was having normal stature and was a football player. On examination, breasts were well developed (Tanner's stage 5) and pubic hair was minimal (Tanner's stage 1). What is the most probable diagnosis?",
+      "options": [
+        "Premature ovarian failure",
+        "Turner's syndrome",
+        "Miillerian agenesis",
+        "Androgen insensitivity"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Gynaecology & Obstetrics",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.977,
+          "prompt_tokens": 185
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9201,
+          "prompt_tokens": 810
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.7399,
+          "prompt_tokens": 856
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.7155,
+          "prompt_tokens": 185
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9947,
+          "prompt_tokens": 856
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 810
+        }
+      }
+    },
+    {
+      "id": "df7841aa-3651-4339-bcb8-c725cb6cc2eb",
+      "question": "Mode:is defined as?",
+      "options": [
+        "Average of the values",
+        "Relating to a value or quantity lying at the midpoint of a data after arranging in ascending or descending order",
+        "Adding up the values and then dividing by the number of values",
+        "The number which appears most often in a set of numbers"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Dental",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 127
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9954,
+          "prompt_tokens": 644
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9933,
+          "prompt_tokens": 672
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.8328,
+          "prompt_tokens": 127
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 672
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 644
+        }
+      }
+    },
+    {
+      "id": "34d4d029-e35a-4f34-832a-6129654cd239",
+      "question": "A person is HBsAg positive, but Anti- HBc Ab is negative. What should he the next step?",
+      "options": [
+        "Repeat test after 6 months",
+        "Check HBV DNA load",
+        "Check HBeAg, if positive start interferon",
+        "Reassure patient that he does not have any disease"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Medicine",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9948,
+          "prompt_tokens": 129
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.3354,
+          "prompt_tokens": 756
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.3583,
+          "prompt_tokens": 787
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4117,
+          "prompt_tokens": 129
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.901,
+          "prompt_tokens": 787
+        },
+        "rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.8955,
+          "prompt_tokens": 756
+        }
+      }
+    },
+    {
+      "id": "62b4984a-2bd0-47b0-ab7c-8cc7027c8303",
+      "question": "Which one of the following is not a criterion for making a diagnosis of chronic myeloid leukemia in accelerated phase:",
+      "options": [
+        "Blasts 10-19% of WBC's in peripheral blood",
+        "Basophils 10-19% of WBC'S in peripheral blood",
+        "Increasing spleen size unresponsive to therapy",
+        "Persistent thrombocytosis (>1000 x 109/L) unresponsive to therapy"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Pathology",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.5572,
+          "prompt_tokens": 159
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.476,
+          "prompt_tokens": 904
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.3362,
+          "prompt_tokens": 919
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4668,
+          "prompt_tokens": 159
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.3834,
+          "prompt_tokens": 919
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9836,
+          "prompt_tokens": 904
+        }
+      }
+    },
+    {
+      "id": "a963bf66-e44e-445f-b3ba-26efcd836ad9",
+      "question": "Best guide for the management of Resuscitation is:",
+      "options": [
+        "CVP",
+        "Urine output",
+        "Blood pressure",
+        "Saturation of Oxygen"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Surgery",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 95
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9365,
+          "prompt_tokens": 813
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.3805,
+          "prompt_tokens": 776
+        },
+        "qlora": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.4945,
+          "prompt_tokens": 95
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9999,
+          "prompt_tokens": 776
+        },
+        "rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 813
+        }
+      }
+    },
+    {
+      "id": "928c6efd-d481-4323-83f0-721dae436451",
+      "question": "Cholinomimetic is not used in which of the following?",
+      "options": [
+        "Bradycardia",
+        "Glaucoma",
+        "Myasthenia gravis",
+        "Post-surgical atony or ileus"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Pharmacology",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.7706,
+          "prompt_tokens": 108
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9941,
+          "prompt_tokens": 670
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.4243,
+          "prompt_tokens": 676
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.3082,
+          "prompt_tokens": 108
+        },
+        "rag-external": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 676
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 670
+        }
+      }
+    },
+    {
+      "id": "796d7b5d-f79d-4c6a-860c-198e9404ea07",
+      "question": "High molecular weight proteins in cataractous lens seen only in humans:",
+      "options": [
+        "HM 1 and 2",
+        "HM 2 and 3",
+        "HM 2 and 4",
+        "HM 3 and 4"
+      ],
+      "answer_idx": 3,
+      "answer_label": "D",
+      "subject": "Ophthalmology",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.939,
+          "prompt_tokens": 112
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.2907,
+          "prompt_tokens": 611
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.2576,
+          "prompt_tokens": 884
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.2954,
+          "prompt_tokens": 112
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9993,
+          "prompt_tokens": 884
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9395,
+          "prompt_tokens": 611
+        }
+      }
+    },
+    {
+      "id": "60a2311b-bfcb-43c9-9409-30d6f3a0e6b9",
+      "question": "Characteristic features of growth hormone deficiency include all of the following except –",
+      "options": [
+        "Short stature since birth",
+        "Symptomatic hypoglycemia",
+        "Delayed tooth eruption",
+        "Sexual infantilism"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Pediatrics",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9991,
+          "prompt_tokens": 106
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.8039,
+          "prompt_tokens": 579
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4467,
+          "prompt_tokens": 676
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.8243,
+          "prompt_tokens": 106
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.7995,
+          "prompt_tokens": 676
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.991,
+          "prompt_tokens": 579
+        }
+      }
+    },
+    {
+      "id": "44796bcd-ae11-44de-94da-6bcb502fcad6",
+      "question": "For an unbounded amalgam restoration, what should be done before copal varnish is applied ?",
+      "options": [
+        "Dentine desensitiser is applied",
+        "Smear layer is left intact",
+        "Smear layer is modified",
+        "After removal of enamel smear layer only"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "index_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.924,
+          "prompt_tokens": 119
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.379,
+          "prompt_tokens": 635
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4931,
+          "prompt_tokens": 683
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.484,
+          "prompt_tokens": 119
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9991,
+          "prompt_tokens": 683
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9928,
+          "prompt_tokens": 635
+        }
+      }
+    },
+    {
+      "id": "0a08a713-9a1e-49db-99ed-d0050c717e02",
+      "question": "Greater crown bulk distal to the faciolingual dissecting plane of the tooth is most typical of mandibular",
+      "options": [
+        "Central incisor",
+        "Canine",
+        "Lateral incisor",
+        "Second premolar"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Dental",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 110
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.3908,
+          "prompt_tokens": 648
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.3148,
+          "prompt_tokens": 807
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.3325,
+          "prompt_tokens": 110
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.8131,
+          "prompt_tokens": 807
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 648
+        }
+      }
+    },
+    {
+      "id": "e15bd12a-6b91-40be-a531-eef51948125d",
+      "question": "Effect of radiation is:",
+      "options": [
+        "Cumulative",
+        "Fractionalized",
+        "Concentrated",
+        "Dependent on genetic make-up of individuals"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Radiology",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 93
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.5199,
+          "prompt_tokens": 583
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.778,
+          "prompt_tokens": 571
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.6965,
+          "prompt_tokens": 93
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 571
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.982,
+          "prompt_tokens": 583
+        }
+      }
+    },
+    {
+      "id": "c3f2d738-cddc-4bd2-b9e7-e8a41969d42d",
+      "question": "A rest seat is prepared as:",
+      "options": [
+        "Spoon shaped depression with the apex towards the center of the tooth",
+        "Concavity with hemisphere shape",
+        "Elliptical shape",
+        "Rhomboid depression limited to enamel"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 108
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4888,
+          "prompt_tokens": 574
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.7458,
+          "prompt_tokens": 798
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.8203,
+          "prompt_tokens": 108
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9947,
+          "prompt_tokens": 798
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 574
+        }
+      }
+    },
+    {
+      "id": "2dcd58c8-0fb7-4802-a5c7-e83c40f8a2de",
+      "question": "Bar-clasp assembly mostly used is:",
+      "options": [
+        "Mesio-occlusal rest",
+        "Distort-occlusal rest",
+        "Buccal approach",
+        "None of the above"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9991,
+          "prompt_tokens": 102
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4584,
+          "prompt_tokens": 533
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.5878,
+          "prompt_tokens": 604
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.6088,
+          "prompt_tokens": 102
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9991,
+          "prompt_tokens": 604
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9682,
+          "prompt_tokens": 533
+        }
+      }
+    },
+    {
+      "id": "ad3f328f-72a0-4539-be89-1c9b6cce07f6",
+      "question": "A young female patient presents with jaundice and elevated liver enzymes. She has a history of two smilar episodes in the past. Her serum ANA was 1:40 and IgG was 2400 IU. Her serum copper levels were normal and viral markers were negative. A liver biopsy was carried out and based on the pathology report, you treated her with immunosuppressants and the patient's condition improved. What was the most likely finding on pathology report to suggest the treatment?",
+      "options": [
+        "Non-alcoholic steatohepatitis",
+        "Hemosiderosis",
+        "Autoimmune hepatitis",
+        "Primary biliary cirrhosis"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Medicine",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 197
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.8335,
+          "prompt_tokens": 836
+        },
+        "qlora-rag": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9796,
+          "prompt_tokens": 986
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.9771,
+          "prompt_tokens": 197
+        },
+        "rag-external": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 1.0,
+          "prompt_tokens": 986
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9047,
+          "prompt_tokens": 836
+        }
+      }
+    },
+    {
+      "id": "2b776323-df34-4cab-ad74-e9d4e8c4e128",
+      "question": "Distance of the blade from the shank to have antirotational stability of the instrument?",
+      "options": [
+        "2 mm",
+        "3 mm",
+        "4 mm",
+        "5 mm"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.8306,
+          "prompt_tokens": 103
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.2822,
+          "prompt_tokens": 623
+        },
+        "qlora-rag": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.2907,
+          "prompt_tokens": 821
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.2656,
+          "prompt_tokens": 103
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.9935,
+          "prompt_tokens": 821
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.7198,
+          "prompt_tokens": 623
+        }
+      }
+    },
+    {
+      "id": "7b32d1d8-6d89-4615-a1e4-f56d02b7339f",
+      "question": "Which tooth has a non functional cusp",
+      "options": [
+        "Lower 1st premolar",
+        "Upper 1st premolar",
+        "Lower 2nd premolar",
+        "Upper 1st premolar"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.8739,
+          "prompt_tokens": 106
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.323,
+          "prompt_tokens": 506
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.4286,
+          "prompt_tokens": 796
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.4161,
+          "prompt_tokens": 106
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.6154,
+          "prompt_tokens": 796
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9738,
+          "prompt_tokens": 506
+        }
+      }
+    },
+    {
+      "id": "48306148-c874-49d5-b66e-ebf71d01ca92",
+      "question": "All of the following bones are involves in wrist joint formation EXCEPT?",
+      "options": [
+        "Scaphoid",
+        "Ulna",
+        "Radius",
+        "Triquetral"
+      ],
+      "answer_idx": 1,
+      "answer_label": "B",
+      "subject": "Anatomy",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 1.0,
+          "prompt_tokens": 97
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9207,
+          "prompt_tokens": 578
+        },
+        "qlora-rag": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9469,
+          "prompt_tokens": 653
+        },
+        "qlora": {
+          "predicted_idx": 1,
+          "predicted_label": "B",
+          "confidence": 0.9892,
+          "prompt_tokens": 97
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.8659,
+          "prompt_tokens": 653
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 0.9946,
+          "prompt_tokens": 578
+        }
+      }
+    },
+    {
+      "id": "c1069842-8261-4a97-b1bb-5faeaacc6435",
+      "question": "Patient is a known case of epilepsy, taking levetiracetam 1 gm BD. He is now seizure free from 2 years but he developed agitation and anger issues interfering with day to day activities as a result of the drug intake. What should be the next best step?",
+      "options": [
+        "Stop levetiracetam and start on a different antiepileptic",
+        "Discontinue the drug as he is seizure free",
+        "Slowly taper the drug over next 6 months",
+        "Continue levetiracetam since a 5-year seizure free interval is needed"
+      ],
+      "answer_idx": 2,
+      "answer_label": "C",
+      "subject": "Pharmacology",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 180
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.5397,
+          "prompt_tokens": 651
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.5635,
+          "prompt_tokens": 812
+        },
+        "qlora": {
+          "predicted_idx": 2,
+          "predicted_label": "C",
+          "confidence": 0.5625,
+          "prompt_tokens": 180
+        },
+        "rag-external": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 812
+        },
+        "rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 651
+        }
+      }
+    },
+    {
+      "id": "1920da28-e234-4f1e-8a02-8eb426ca5478",
+      "question": "Function of molybdenum in base metal alloys",
+      "options": [
+        "Increases strength",
+        "Decreases strength",
+        "Increase CTP.",
+        "Decrease corrosion resistance"
+      ],
+      "answer_idx": 0,
+      "answer_label": "A",
+      "subject": "Dental",
+      "bucket": "weights_only",
+      "answers": {
+        "base": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 1.0,
+          "prompt_tokens": 97
+        },
+        "qlora-rag-parity": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.527,
+          "prompt_tokens": 552
+        },
+        "qlora-rag": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.8269,
+          "prompt_tokens": 579
+        },
+        "qlora": {
+          "predicted_idx": 0,
+          "predicted_label": "A",
+          "confidence": 0.6092,
+          "prompt_tokens": 97
+        },
+        "rag-external": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 579
+        },
+        "rag-parity": {
+          "predicted_idx": 3,
+          "predicted_label": "D",
+          "confidence": 1.0,
+          "prompt_tokens": 552
+        }
+      }
+    }
+  ],
+  "cost": {
+    "rate_card": {
+      "gpu_name": "NVIDIA A40 46GB",
+      "gpu_usd_per_hour": 0.4,
+      "cpu_usd_per_hour": 0.03,
+      "source_url": "https://runpod.io/pricing",
+      "retrieved": "2026-08-07"
+    },
+    "arms": {
+      "base": {
+        "fixed_usd": 0.0,
+        "marginal_usd_per_query": 1.1493791412148211e-05,
+        "train_gpu_seconds": 0.0,
+        "index_build_gpu_seconds": 0.0
+      },
+      "qlora-rag-parity": {
+        "fixed_usd": 2.0956999619380676,
+        "marginal_usd_per_query": 1.8950922932061884e-05,
+        "train_gpu_seconds": 18214.265778866597,
+        "index_build_gpu_seconds": 647.0338785760105
+      },
+      "qlora-rag": {
+        "fixed_usd": 2.360109367174821,
+        "marginal_usd_per_query": 1.985537488427427e-05,
+        "train_gpu_seconds": 18214.265778866597,
+        "index_build_gpu_seconds": 3026.7185257067904
+      },
+      "qlora": {
+        "fixed_usd": 2.0238073087629553,
+        "marginal_usd_per_query": 1.1322957877483633e-05,
+        "train_gpu_seconds": 18214.265778866597,
+        "index_build_gpu_seconds": 0.0
+      },
+      "rag-external": {
+        "fixed_usd": 0.3363020584118656,
+        "marginal_usd_per_query": 1.98397690223323e-05,
+        "train_gpu_seconds": 0.0,
+        "index_build_gpu_seconds": 3026.7185257067904
+      },
+      "rag-parity": {
+        "fixed_usd": 0.07189265317511227,
+        "marginal_usd_per_query": 1.8967579325868026e-05,
+        "train_gpu_seconds": 0.0,
+        "index_build_gpu_seconds": 647.0338785760105
+      }
+    },
+    "default_volume": 100000,
+    "crossovers": {
+      "base|qlora": 11846663,
+      "qlora-rag-parity|rag-external": 1979418,
+      "qlora-rag-parity|rag-parity": 121503330,
+      "qlora|rag-external": 198138,
+      "qlora|rag-parity": 255332
+    }
+  }
+}
