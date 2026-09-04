@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fine-Tune vs. Retrieve</title>
+<meta name="description" content="A controlled six-arm benchmark in clinical QA: when is fine-tuning worth it versus just retrieving?">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Fine-Tune vs. Retrieve</h1>
+  <p class="lede">Retrieval beat fine-tuning on identical information — and the same
+  retrieval over a different corpus was worth nothing.</p>
+  <p>A controlled six-arm benchmark in clinical multiple-choice QA. One base model, one
+  frozen 1,000-item test set, one prompt, one GPU.</p>
+
+  <div class="warning">
+    <strong>⚠️ Not for clinical use. Not medical advice. Not validated on real patients.</strong>
+    This is a measurement artifact about fine-tuning versus retrieval, not a medical tool.
+  </div>
+
+  <nav class="links">
+    <a href="https://github.com/vireshkoli/Fine-Tune-vs-RAG">Source &amp; full methodology →</a>
+    <a href="https://huggingface.co/vireshk/qwen3-8b-medmcqa-qlora">The adapter →</a>
+  </nav>
+</header>
+
+<h2>The three findings</h2>
+
+<p><strong>1. On identical information, the index beat the weights.</strong>
+<code>rag-parity</code> retrieves the same MedMCQA explanations the fine-tune trained on —
+same base model, same prompt, same facts. Retrieval gained +10.2 points, fine-tuning +6.1,
+and the gap between them is significant (p&nbsp;=&nbsp;0.016).</p>
+
+<p><strong>2. Retrieval over the wrong corpus was worth nothing.</strong>
+<code>rag-external</code> reads 1.6M chunks of peer-reviewed literature and scores
+<strong>+0.001 against base</strong> (p&nbsp;=&nbsp;1.000) — a true null, not an
+underpowered one. Yet its retrieval <em>works</em>: it surfaces the gold answer in 45.4% of
+items. Lexical presence of an answer is not usable evidence.
+<strong>The corpus mattered more than the technique.</strong></p>
+
+<p><strong>3. Fine-tuning repays its training cost at ~200,000 queries.</strong> A
+<em>merged</em> adapter has identical inference cost to the base, so its advantage is purely
+prompt length: 113 tokens versus 738.</p>
+
+<div class="table-wrap" id="arms-table"></div>
+<p class="muted">Minimum detectable effect at n=1,000 is 6.3 points. Comparisons use paired
+McNemar over identical items.</p>
+
+<div class="figures">
+  <img src="assets/arms.png" alt="Accuracy, p95 latency and cost per 1,000 queries across the six arms">
+  <img src="assets/cost-crossover.png" alt="Cost per 1,000 queries against lifetime query volume">
+</div>
+
+<h2>Browse the benchmark</h2>
+
+<p>60 items, stratified by <strong>which approach got them right</strong> rather than sampled
+at random — a random draw is mostly items where every arm agrees, which shows nothing. Start
+with <code>index_only</code> and <code>weights_only</code>: those are the cases the whole
+benchmark exists to separate.</p>
+
+<div class="controls">
+  <div class="control">
+    <label for="bucket">Disagreement pattern</label>
+    <select id="bucket"></select>
+  </div>
+  <div class="control">
+    <label for="item">Question</label>
+    <select id="item"></select>
+  </div>
+</div>
+
+<div class="card" id="question"></div>
+<div class="table-wrap" id="answers"></div>
+
+<h2>Cost</h2>
+
+<p>Cost per query is meaningless without a volume assumption, so it is swept rather than
+asserted. Each arm costs <code>fixed_cost / volume + marginal_cost</code>: fine-tuning is a
+large one-off with cheap short-prompt inference, retrieval is nearly free up front but
+inflates prefill tokens on every query, forever. <strong>The crossover is the
+deliverable.</strong></p>
+
+<div class="controls">
+  <div class="control">
+    <label for="volume">Lifetime query volume — <span id="volume-label"></span></label>
+    <input type="range" id="volume" min="2" max="8" step="0.25" value="5">
+  </div>
+</div>
+
+<div class="table-wrap" id="cost-table"></div>
+<div id="cost-summary"></div>
+
+<h2>How the arms are kept comparable</h2>
+
+<p>Asserted in tests in the source repository, not promised in prose:</p>
+
+<div class="card">
+<ul>
+  <li><strong>One <code>from_pretrained</code></strong> in the codebase; arms share the same
+  model object.</li>
+  <li><strong>One prompt builder</strong> — stripping a RAG prompt's context must reproduce
+  the non-RAG prompt byte for byte, and the <em>training</em> prompt is built by the same
+  function.</li>
+  <li><strong>Constrained A/B/C/D log-prob scoring</strong>, never free generation —
+  otherwise fine-tuned arms gain from learned formatting rather than knowledge.</li>
+  <li><strong>Shared 3,000-character context budget</strong> across RAG arms, so corpus
+  quality is not confounded with context length.</li>
+  <li><strong>Indices built from train-side text only</strong>, gated on content hash.</li>
+  <li><strong>Pinned model revisions</strong>, fixed batch size, one frozen
+  SHA-256-committed test set.</li>
+</ul>
+</div>
+
+<h2>Honest limitations</h2>
+
+<div class="card">
+<ul>
+  <li><strong>Single seed.</strong> All results are seed 42. Headline comparisons are paired
+  within-seed — the stronger test — but training-seed variance is unmeasured.</li>
+  <li><strong>Contamination is present but measured.</strong> ~9% of test stems are
+  reproduced verbatim above a shuffled-reference chance baseline. But shuffling the answer
+  options changes the base model's score by only −1.6 points, so it is not relying on
+  memorised labels, and contamination is roughly constant across arms — the between-arm
+  comparisons are largely unaffected. The fine-tune did pick up mild positional sensitivity
+  (+3.2) the base model lacks.</li>
+  <li><strong>31.3% of the evaluation pool is dentistry</strong>, the subject where
+  retrieval helps least.</li>
+  <li><strong>The two indices differ 7.3× in size</strong>, so parity-vs-external conflates
+  corpus content with corpus size.</li>
+  <li><strong>No free-text evaluation.</strong> All results are 4-option MCQ.</li>
+  <li><strong>This demo shows no retrieved passages.</strong> The committed run JSONs store
+  predictions and token counts, not the retrieved text; showing it would mean re-running
+  retrieval.</li>
+</ul>
+</div>
+
+<footer>
+  <p id="provenance"></p>
+  <p>This Space is <strong>static</strong>: no runtime, no GPU quota, no cold start, and it
+  never sleeps. Every answer is read from a committed JSON file rather than generated on
+  demand, which is also why it cannot drift from the published numbers.</p>
+  <p>Code MIT. MedMCQA is Apache 2.0. Base model <code>Qwen/Qwen3-8B</code>, Apache 2.0.</p>
+</footer>
+
+</main>
+<script type="module" src="ui.js"></script>
+</body>
+</html>

@@ -77,7 +77,7 @@ packages = ["src/fvr"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests", "scripts", "app"]
+src = ["src", "tests", "scripts"]
 
 [tool.ruff.lint]
 select = [
@@ -110,9 +110,7 @@ python_version = "3.12"
 strict = true
 warn_unreachable = true
 disallow_untyped_defs = true
-# ``app`` holds the demo Space, whose demo.py is unit-tested from tests/.
-files = ["src", "tests", "scripts", "app"]
-mypy_path = "app"
+files = ["src", "tests", "scripts"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
@@ -120,7 +118,7 @@ plugins = ["pydantic.mypy"]
 module = [
     "torch.*", "transformers.*", "peft.*", "trl.*", "bitsandbytes.*",
     "datasets.*", "faiss.*", "sentence_transformers.*", "wandb.*", "vllm.*",
-    "matplotlib.*", "gradio.*",
+    "matplotlib.*",
 ]
 ignore_missing_imports = true
 

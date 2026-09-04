@@ -22,6 +22,7 @@ from fvr.config import Paths, Secrets, bootstrap_env, load_config  # isort: skip
 import argparse
 import itertools
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -70,6 +71,15 @@ def build_space_data(paths: Paths) -> Path:
 
     payload = build_payload(aggregate, questions, extra={"cost": cost})
     out = write_payload(payload, paths.root / APP_DIR / "precomputed" / "responses.json")
+
+    # The Space must be self-contained, so the figures are copied rather than
+    # linked. Doing it here keeps them in step with results/figures/ instead of
+    # relying on someone remembering to re-copy after `make report`.
+    assets = paths.root / APP_DIR / "assets"
+    assets.mkdir(parents=True, exist_ok=True)
+    for figure in ("arms.png", "cost-crossover.png"):
+        shutil.copyfile(paths.results / "figures" / figure, assets / figure)
+
     buckets: dict[str, int] = {}
     for item in payload["items"]:
         buckets[item["bucket"]] = buckets.get(item["bucket"], 0) + 1
@@ -82,18 +92,37 @@ def build_space_data(paths: Paths) -> Path:
 
 
 def push(plan: UploadPlan, *, token: str | None, message: str) -> str:
-    from huggingface_hub import HfApi
+    """Upload the whole plan as one commit.
+
+    A per-file loop leaves a half-published repo when a single upload fails
+    mid-way, which is how this first went wrong: the Space ended up with its
+    card and one figure and nothing else. ``create_commit`` is atomic, so a
+    failure leaves the repo exactly as it was.
+    """
+    from huggingface_hub import CommitOperationAdd, HfApi
 
     api = HfApi(token=token)
-    api.create_repo(plan.repo_id, repo_type=plan.repo_type, exist_ok=True, private=False)
-    for local, remote in sorted(plan.entries, key=lambda e: e[1]):
-        api.upload_file(
-            path_or_fileobj=str(local),
-            path_in_repo=remote,
-            repo_id=plan.repo_id,
-            repo_type=plan.repo_type,
-            commit_message=message,
-        )
+    # A Space repo must declare its runtime at creation time, and it must match
+    # app/README.md's `sdk:` field — the two disagreeing gives a Space that
+    # builds with the wrong runtime and fails with no useful error. `static` is
+    # also the only runtime free accounts may host: Hugging Face now requires
+    # PRO for a Gradio or Docker Space even on free cpu-basic hardware.
+    api.create_repo(
+        plan.repo_id,
+        repo_type=plan.repo_type,
+        exist_ok=True,
+        private=False,
+        space_sdk="static" if plan.repo_type == "space" else None,
+    )
+    api.create_commit(
+        repo_id=plan.repo_id,
+        repo_type=plan.repo_type,
+        operations=[
+            CommitOperationAdd(path_in_repo=remote, path_or_fileobj=str(local))
+            for local, remote in sorted(plan.entries, key=lambda e: e[1])
+        ],
+        commit_message=message,
+    )
     prefix = "spaces/" if plan.repo_type == "space" else ""
     return f"https://huggingface.co/{prefix}{plan.repo_id}"
 

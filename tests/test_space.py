@@ -1,41 +1,33 @@
-"""The demo Space: payload construction and the rendering it feeds.
+"""The demo Space: payload construction, and the rendering that reads it.
 
 Two concerns, tested together because they are two halves of one contract —
-``fvr.ops.space`` writes ``app/precomputed/responses.json`` and ``app/demo.py``
+``fvr.ops.space`` writes ``app/precomputed/responses.json`` and ``app/logic.js``
 reads it. A field renamed on one side and not the other would break the live
-Space silently, so the last class exercises the real committed payload through
-the real rendering functions.
+Space silently.
+
+The Space is static, so its rendering logic is JavaScript. Rather than leave it
+untested or duplicate it in Python, the last class shells out to ``node --test``
+and surfaces the result here — one ``make test`` still covers the whole demo.
 """
 
 from __future__ import annotations
 
-import importlib.util
+import json
 import math
-import sys
+import re
+import shutil
+import subprocess
 from pathlib import Path
-from types import ModuleType
-from typing import Any
 
 import pytest
 
 from fvr.config import PROJECT_ROOT
 from fvr.data.schema import Question
+from fvr.ops.hub import SPACE_ENTRY_POINT
 from fvr.ops.space import bucket_for, build_payload, select_items, softmax, write_payload
 from fvr.report.aggregate import Aggregate, RunRecord
 
-
-def _load_demo() -> ModuleType:
-    """Import ``app/demo.py`` by path — ``app/`` ships to the Space, not as a package."""
-    path = PROJECT_ROOT / "app" / "demo.py"
-    spec = importlib.util.spec_from_file_location("space_demo", path)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["space_demo"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-demo = _load_demo()
+APP = PROJECT_ROOT / "app"
 
 
 def _question(qid: str, answer_idx: int) -> Question:
@@ -113,10 +105,6 @@ class TestBuckets:
     def test_everyone_wrong(self) -> None:
         assert bucket_for(base_ok=False, finetune_ok=False, retrieval_ok=False) == "everyone_wrong"
 
-    def test_every_bucket_has_a_blurb(self) -> None:
-        """A bucket the demo cannot explain should not reach the demo."""
-        assert set(demo.BUCKET_ORDER) <= set(demo.BUCKET_BLURBS)
-
 
 class TestSelection:
     @pytest.fixture
@@ -174,7 +162,7 @@ class TestPayload:
         assert payload["items"]
 
         path = write_payload(payload, tmp_path / "nested" / "responses.json")
-        assert demo.load_payload(path) == payload
+        assert json.loads(path.read_text(encoding="utf-8")) == payload
 
     def test_refuses_runs_from_different_splits(
         self, aggregate_and_questions: tuple[Aggregate, dict[str, Question]]
@@ -199,97 +187,46 @@ def aggregate_and_questions() -> tuple[Aggregate, dict[str, Question]]:
     return aggregate, questions
 
 
-class TestCostRendering:
-    @pytest.fixture
-    def payload(self) -> dict[str, Any]:
-        return {
-            "cost": {
-                "rate_card": {
-                    "gpu_name": "A40",
-                    "gpu_usd_per_hour": 0.4,
-                    "cpu_usd_per_hour": 0.03,
-                    "source_url": "https://example.test",
-                    "retrieved": "2026-08-07",
-                },
-                "arms": {
-                    "trained": {"fixed_usd": 2.0, "marginal_usd_per_query": 0.00001},
-                    "retrieval": {"fixed_usd": 0.0, "marginal_usd_per_query": 0.00002},
-                },
-                "crossovers": {"trained|retrieval": 200000},
-                "default_volume": 100000,
-            }
-        }
+class TestStaticSpace:
+    """The shipped Space, and the JavaScript that renders it."""
 
-    def test_amortisation_shrinks_with_volume(self, payload: dict[str, Any]) -> None:
-        arm = {"fixed_usd": 2.0, "marginal_usd_per_query": 0.00001}
-        assert demo.usd_per_1k(arm, 1) > demo.usd_per_1k(arm, 1_000_000)
+    def test_declares_a_static_sdk_matching_its_entry_point(self) -> None:
+        """A Space whose `sdk:` disagrees with reality builds the wrong runtime."""
+        card = (APP / "README.md").read_text(encoding="utf-8")
+        assert "sdk: static" in card
+        assert "app_file: index.html" in card
+        assert (APP / SPACE_ENTRY_POINT).is_file()
 
-    def test_approaches_the_marginal_rate(self) -> None:
-        arm = {"fixed_usd": 2.0, "marginal_usd_per_query": 0.00001}
-        assert demo.usd_per_1k(arm, 10**12) == pytest.approx(0.01, rel=1e-3)
+    def test_the_page_loads_only_files_that_exist(self) -> None:
+        """A broken asset path is invisible in review and obvious to a visitor."""
+        html = (APP / "index.html").read_text(encoding="utf-8")
+        referenced = set(re.findall(r'(?:src|href)="([^"#:]+)"', html))
+        for reference in referenced:
+            assert (APP / reference).is_file(), f"index.html references missing {reference}"
 
-    def test_rejects_zero_volume(self) -> None:
-        with pytest.raises(ValueError, match="positive"):
-            demo.usd_per_1k({"fixed_usd": 1.0, "marginal_usd_per_query": 0.0}, 0)
+    def test_the_payload_is_committed_and_current(self) -> None:
+        """The Space ships the payload; a stale one would show stale answers."""
+        payload = json.loads((APP / "precomputed" / "responses.json").read_text(encoding="utf-8"))
+        runs = Aggregate.load(PROJECT_ROOT / "results" / "runs")
+        assert {arm["name"] for arm in payload["arms"]} == set(runs.arms)
+        assert payload["provenance"]["split_sha256"] in runs.split_hashes()
 
-    def test_the_crossover_actually_crosses(self, payload: dict[str, Any]) -> None:
-        """The published crossover must be where the ranking really flips."""
-        arms = payload["cost"]["arms"]
-        before = demo.cost_table(payload, 100)[0][1]
-        after = demo.cost_table(payload, 10_000_000)[0][1]
-        assert before == "retrieval", "the low-fixed-cost arm should win at low volume"
-        assert after == "trained", "the low-marginal arm should win at high volume"
-        assert set(arms) == {"trained", "retrieval"}
+    def test_the_figures_match_the_generated_ones(self) -> None:
+        """`make space-data` copies these; a drifted copy shows an old chart."""
+        for figure in ("arms.png", "cost-crossover.png"):
+            shipped = (APP / "assets" / figure).read_bytes()
+            generated = (PROJECT_ROOT / "results" / "figures" / figure).read_bytes()
+            assert shipped == generated, f"{figure} is stale; run `make space-data`"
 
-    def test_summary_names_the_winner(self, payload: dict[str, Any]) -> None:
-        assert "`retrieval`" in demo.cost_summary(payload, 100)
-        assert "200,000" in demo.cost_summary(payload, 100)
-
-
-@pytest.fixture(scope="module")
-def committed_payload() -> dict[str, Any]:
-    """The real ``app/precomputed/responses.json``, as the Space will read it."""
-    payload: dict[str, Any] = demo.load_payload()
-    return payload
-
-
-class TestAgainstTheCommittedPayload:
-    """The real ``responses.json`` through the real rendering functions."""
-
-    def test_every_item_renders(self, committed_payload: dict[str, Any]) -> None:
-        for item in committed_payload["items"]:
-            rendered = demo.render_question(item)
-            assert item["question"][:40] in rendered
-            assert "correct" in rendered, "the gold option must be marked"
-
-    def test_answer_verdicts_agree_with_the_gold_label(
-        self, committed_payload: dict[str, Any]
-    ) -> None:
-        for item in committed_payload["items"]:
-            for row in demo.render_answers(item, committed_payload):
-                predicted = row[1].split(".")[0]
-                expected = "correct" if predicted == item["answer_label"] else "wrong"
-                assert row[2] == expected, f"{item['id']} / {row[0]}"
-
-    def test_arms_table_is_ordered_by_accuracy(self, committed_payload: dict[str, Any]) -> None:
-        accuracies = [float(row[1].rstrip("%")) for row in demo.arms_table(committed_payload)]
-        assert accuracies == sorted(accuracies, reverse=True)
-
-    def test_bucket_filter_narrows_the_picker(self, committed_payload: dict[str, Any]) -> None:
-        everything = demo.item_choices(committed_payload, "all")
-        one = demo.item_choices(committed_payload, "index_only")
-        assert 0 < len(one) < len(everything)
-
-    def test_lookup_by_id_round_trips(self, committed_payload: dict[str, Any]) -> None:
-        for _, item_id in demo.item_choices(committed_payload, "all"):
-            assert demo.find_item(committed_payload, item_id) is not None
-        assert demo.find_item(committed_payload, "no-such-item") is None
-
-    def test_cost_table_covers_every_evaluated_arm(self, committed_payload: dict[str, Any]) -> None:
-        named = {row[1] for row in demo.cost_table(committed_payload, 100_000)}
-        assert named == {arm["name"] for arm in committed_payload["arms"]}
-
-    def test_provenance_cites_the_frozen_split(self, committed_payload: dict[str, Any]) -> None:
-        note = demo.provenance_note(committed_payload)
-        assert committed_payload["provenance"]["split_sha256"][:16] in note
-        assert "Nothing is generated at demo time" in note
+    @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+    def test_the_javascript_suite_passes(self) -> None:
+        """Run app/logic.test.js so one `make test` covers the whole demo."""
+        result = subprocess.run(
+            ["node", "--test"],
+            cwd=APP,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr

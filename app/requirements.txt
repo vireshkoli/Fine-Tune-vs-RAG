@@ -1,3 +1,0 @@
-# Pinned so the Space keeps building after upstream releases. The demo is
-# precomputed, so nothing here is a model dependency — gradio reads JSON.
-gradio==5.49.1
