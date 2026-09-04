@@ -1,0 +1,32 @@
+# Two images because they have genuinely different requirements: training needs
+# CUDA and the full ML stack; serving must work for a reviewer with neither.
+services:
+  train:
+    build:
+      context: ..
+      dockerfile: docker/train.Dockerfile
+    image: fine-tune-vs-rag:train
+    volumes:
+      # Artifacts live on the host so a container restart does not re-download
+      # 17GB of weights, and so teardown remains a host-side operation.
+      - ../.artifacts:/app/.artifacts
+      - ../results:/app/results
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - WANDB_API_KEY=${WANDB_API_KEY}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  serve:
+    build:
+      context: ..
+      dockerfile: docker/serve.Dockerfile
+    image: fine-tune-vs-rag:serve
+    volumes:
+      - ../results:/app/results
+    # No GPU reservation: this must run without one.
