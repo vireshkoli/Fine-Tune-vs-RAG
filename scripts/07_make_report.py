@@ -10,21 +10,18 @@ by construction rather than by review.
 
 from __future__ import annotations
 
-from fvr.config import Paths, bootstrap_env, load_config  # isort: skip
+from fvr.config import bootstrap_env, load_config  # isort: skip
 
 import itertools
-import json
 import sys
-from pathlib import Path
 
-import yaml
 from rich.console import Console
 
 from fvr.data.loaders import load_medmcqa
-from fvr.eval.cost import ArmCost, CostCurve, FixedCosts, PerQueryCosts, RateCard, crossover_volume
-from fvr.inference.arms import ARMS_BY_NAME
+from fvr.eval.cost import CostCurve, crossover_volume
 from fvr.report.aggregate import Aggregate, load_gold
 from fvr.report.charts import Theme, arm_comparison_chart, cost_crossover_chart
+from fvr.report.costs import build_costs, load_rate_card
 from fvr.report.tables import (
     comparison_table,
     cost_table,
@@ -34,48 +31,6 @@ from fvr.report.tables import (
 )
 
 console = Console()
-
-
-def build_costs(aggregate: Aggregate, rates: RateCard, paths: Paths) -> dict[str, ArmCost]:
-    """Assemble the cost model from measured GPU-seconds.
-
-    Inference time is the measured p50. Index build and training come from the
-    artefacts those steps wrote, so an arm that was never trained contributes no
-    imaginary training cost.
-    """
-    indices = Path(str(paths.indices))
-    results = Path(str(paths.results))
-
-    def index_seconds(corpus: str) -> float:
-        stats = indices / corpus / "build_stats.json"
-        if not stats.is_file():
-            return 0.0
-        return float(json.loads(stats.read_text(encoding="utf-8"))["embed_gpu_seconds"])
-
-    def train_seconds(arm_name: str) -> float:
-        arm = ARMS_BY_NAME.get(arm_name)
-        if arm is None or not arm.uses_adapter:
-            return 0.0
-        summary = results / "training" / "qlora-r16.json"
-        if not summary.is_file():
-            return 0.0
-        return float(json.loads(summary.read_text(encoding="utf-8"))["train_gpu_seconds"])
-
-    costs: dict[str, ArmCost] = {}
-    for name in aggregate.arms:
-        arm = ARMS_BY_NAME.get(name)
-        run = aggregate.for_arm(name)[0]
-        corpus = arm.corpus if arm is not None else "none"
-        costs[name] = ArmCost(
-            arm=name,
-            fixed=FixedCosts(
-                train_gpu_seconds=train_seconds(name),
-                index_build_gpu_seconds=index_seconds(corpus) if corpus != "none" else 0.0,
-            ),
-            per_query=PerQueryCosts(inference_gpu_seconds=run.p50_ms / 1000),
-            rates=rates,
-        )
-    return costs
 
 
 def main() -> int:
@@ -89,9 +44,8 @@ def main() -> int:
     aggregate.assert_same_split()
     console.print(f"Loaded {len(aggregate.runs)} run(s) across {len(aggregate.arms)} arm(s)")
 
-    cost_config = yaml.safe_load((paths.configs / "eval" / "cost.yaml").read_text(encoding="utf-8"))
-    rates = RateCard(**cost_config["rate_card"])
-    volumes = list(cost_config["amortization"]["sweep_volumes"])
+    rates, amortization = load_rate_card(paths.configs)
+    volumes = list(amortization["sweep_volumes"])
 
     costs = build_costs(aggregate, rates, paths)
     curve = CostCurve.build(costs, volumes)
@@ -113,9 +67,7 @@ def main() -> int:
     accuracy = [aggregate.for_arm(a)[0].accuracy for a in arms]
     ci = [aggregate.for_arm(a)[0].ci for a in arms]
     p95 = [aggregate.for_arm(a)[0].p95_ms for a in arms]
-    per_1k = [
-        1000 * costs[a].usd_per_query(cost_config["amortization"]["default_volume"]) for a in arms
-    ]
+    per_1k = [1000 * costs[a].usd_per_query(amortization["default_volume"]) for a in arms]
 
     for theme in (Theme.light(), Theme.dark()):
         suffix = "" if theme.name == "light" else "-dark"

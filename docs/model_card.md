@@ -113,11 +113,23 @@ retrieval arm serves.
 
 ## Limitations
 
-1. **Contamination is unquantified.** MedMCQA predates Qwen3 and is a widely
-   mirrored public benchmark, so assuming it appears in pretraining is the safe
-   prior. Probes are implemented but **not yet run**. Until they are, some
-   portion of the accuracy above may be recall rather than reasoning. This is
-   the largest known threat to these numbers.
+1. **Contamination is present, and measured.** MedMCQA predates Qwen3 and is a
+   widely mirrored public benchmark, so it almost certainly appears in
+   pretraining. Three probes were run rather than assumed:
+   - **Verbatim reproduction.** ~9% of test stems are regenerated well above a
+     shuffled-reference chance baseline (base 10.0% vs 1.3% control;
+     this adapter 8.7% vs 2.0%). Some absolute accuracy above *is* recall.
+   - **Option permutation.** Shuffling answer positions moves the base model by
+     **-1.6 points** — it is not relying on memorised answer labels. This
+     adapter loses **3.2 points**, so fine-tuning *introduced* a mild positional
+     shortcut the base model did not have.
+   - **Position bias.** Negligible for both (max excess 0.029 and 0.045).
+
+   Because contamination is roughly constant across arms — they share a base
+   model and a test set — the between-arm comparisons are largely unaffected,
+   which is what the benchmark exists to measure. Absolute accuracy is inflated;
+   the deltas are not. Full detail in
+   [REPORT.md](https://github.com/vireshkoli/Fine-Tune-vs-RAG/blob/main/REPORT.md#55-contamination-measured-not-assumed).
 2. **Single seed.** All results are seed 42. Training-seed variance is
    unmeasured.
 3. **Narrow evaluation.** 4-option multiple choice only, scored by constrained

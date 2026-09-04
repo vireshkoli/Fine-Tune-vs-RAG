@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc
+.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc space-data push-dry push
 
 PY := uv run
 
@@ -84,6 +84,15 @@ contamination:  ## Run permutation, position-bias and verbatim probes (ARM=base)
 
 errors:  ## Categorise every arm's failures and emit review CSVs
 	$(PY) python scripts/06_error_analysis.py
+
+space-data:  ## Rebuild the demo Space payload from committed run JSONs
+	$(PY) python scripts/08_push_to_hub.py --build-data --target space
+
+push-dry:  ## Print the exact Hub upload manifest without uploading anything
+	$(PY) python scripts/08_push_to_hub.py --build-data
+
+push:  ## Publish the adapter and the demo Space to the Hugging Face Hub
+	$(PY) python scripts/08_push_to_hub.py --build-data --execute
 
 docker-build:  ## Build both images (train needs CUDA; serve runs on CPU)
 	docker build -f docker/train.Dockerfile -t fine-tune-vs-rag:train .
