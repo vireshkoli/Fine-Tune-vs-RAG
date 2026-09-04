@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate errors verify-recoverable teardown docker-build clean-pyc
+.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc
 
 PY := uv run
 
@@ -78,6 +78,9 @@ verify-recoverable:  ## Prove every artifact survives the lab machine being wipe
 
 teardown:  ## Dry-run the artifact deletion manifest (add EXECUTE=1 to delete)
 	$(PY) python scripts/10_teardown.py $(if $(EXECUTE),--execute,)
+
+contamination:  ## Run permutation, position-bias and verbatim probes (ARM=base)
+	$(PY) python scripts/05_contamination.py --arm $(ARM) $(if $(ADAPTER),--adapter $(ADAPTER),)
 
 errors:  ## Categorise every arm's failures and emit review CSVs
 	$(PY) python scripts/06_error_analysis.py

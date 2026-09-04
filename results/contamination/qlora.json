@@ -1,0 +1,73 @@
+{
+  "arm": "qlora",
+  "seed": 42,
+  "model": {
+    "name": "qwen3-8b",
+    "repo_id": "Qwen/Qwen3-8B",
+    "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+    "dtype": "bfloat16",
+    "quantization": "none",
+    "adapter": ".artifacts/checkpoints/qlora-r16/adapter",
+    "adapter_merged": true,
+    "enable_thinking": false
+  },
+  "permutation": {
+    "n": 1000,
+    "original_accuracy": 0.629,
+    "permuted_accuracy": 0.597,
+    "drop": 0.03200000000000003,
+    "relative_drop": 0.05087440381558033,
+    "verdict": "mild positional sensitivity (drop +0.032)"
+  },
+  "position_bias_original": {
+    "predicted_rate": {
+      "A": 0.348,
+      "B": 0.252,
+      "C": 0.19,
+      "D": 0.21
+    },
+    "gold_rate": {
+      "A": 0.325,
+      "B": 0.252,
+      "C": 0.235,
+      "D": 0.188
+    },
+    "max_excess": 0.044999999999999984
+  },
+  "position_bias_permuted": {
+    "predicted_rate": {
+      "A": 0.26,
+      "B": 0.273,
+      "C": 0.214,
+      "D": 0.253
+    },
+    "gold_rate": {
+      "A": 0.221,
+      "B": 0.248,
+      "C": 0.265,
+      "D": 0.266
+    },
+    "max_excess": 0.05100000000000002
+  },
+  "device_occupancy": {
+    "device": 0,
+    "total_used_mib": 3,
+    "foreign_pids": [],
+    "foreign_mib": 0,
+    "exclusive": true
+  },
+  "verbatim": {
+    "n": 150,
+    "mean_overlap": 0.34263336663336663,
+    "high_overlap_rate": 0.08666666666666667,
+    "threshold": 0.75,
+    "verdict": "occasional verbatim reproduction (8.7% of items)"
+  },
+  "verbatim_shuffled_control": {
+    "n": 150,
+    "mean_overlap": 0.20288701668701667,
+    "high_overlap_rate": 0.02,
+    "threshold": 0.75,
+    "verdict": "no verbatim reproduction detected"
+  }
+}

@@ -123,10 +123,13 @@ Asserted in tests, not promised in prose:
 
 - **Single seed.** All results are seed 42. Headline comparisons are paired
   within-seed — the stronger test — but training-seed variance is unmeasured.
-- **Contamination is unquantified.** MedMCQA predates Qwen3 and is a popular
-  public benchmark. Probes are implemented and tested but **not yet run**; until
-  they are, some of every accuracy figure here may be recall rather than
-  reasoning. This is the largest open threat to the numbers.
+- **Contamination is present but measured, not hand-waved.** ~9% of test stems
+  are reproduced verbatim above a shuffled-reference chance baseline, so some
+  absolute accuracy is recall. But shuffling the answer options changes the base
+  model's score by **−1.6 points** — it is not relying on memorised labels — and
+  contamination is roughly constant across arms, so the between-arm comparisons
+  are largely unaffected. The fine-tune did pick up mild positional sensitivity
+  (+3.2) the base model lacks. Full detail in [REPORT.md](REPORT.md#55-contamination-measured-not-assumed).
 - **31.3% of MedMCQA's labelled pool is dentistry**, the subject where retrieval
   helps least. Excluding it, `rag-parity` reaches 74.2% and `base` 59.8% — the
   headline *understates* the effect on genuinely medical subjects.
