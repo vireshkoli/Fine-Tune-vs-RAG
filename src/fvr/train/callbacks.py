@@ -14,7 +14,15 @@ import time
 from pathlib import Path
 from typing import Any
 
-from transformers import TrainerCallback
+try:
+    from transformers import TrainerCallback
+except ImportError:  # pragma: no cover - CPU-only CI has no GPU stack
+    # transformers is an optional `gpu` extra, but this module also holds pure
+    # functions (latest_checkpoint, the OOM marker) that CI must be able to
+    # import and test. Falling back to `object` keeps the module importable
+    # without it; the callbacks are only ever *constructed* inside training,
+    # which always has transformers installed.
+    TrainerCallback = object  # type: ignore[assignment,misc]
 
 
 class ThroughputCallback(TrainerCallback):

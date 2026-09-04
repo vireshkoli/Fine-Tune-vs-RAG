@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-gpu setup-check lint fmt type test check splits verify-splits index index-estimate eval report train train-estimate clean-pyc
+.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate errors verify-recoverable teardown docker-build clean-pyc
 
 PY := uv run
 
@@ -30,7 +30,19 @@ type:  ## Type-check with mypy (strict)
 test:  ## Run the CPU test suite
 	$(PY) pytest
 
-check: lint type test  ## Everything CI runs
+check: lint type test  ## Everything CI runs (in the *local* environment)
+
+# CI installs only the CPU dependency set, so a local `make check` on a machine
+# with the GPU extras can pass while CI fails — that happened, twice: an absent
+# `transformers` made mypy reject subclassing TrainerCallback, and made
+# tests/test_train.py fail at collection. This target reproduces CI's
+# environment in a throwaway venv so the divergence cannot hide again.
+check-ci:  ## Run lint, types and tests in a CPU-only venv, exactly as CI does
+	UV_PROJECT_ENVIRONMENT=/tmp/fvr-ci-venv uv sync --frozen --group dev
+	UV_PROJECT_ENVIRONMENT=/tmp/fvr-ci-venv HF_HUB_OFFLINE=1 uv run ruff check .
+	UV_PROJECT_ENVIRONMENT=/tmp/fvr-ci-venv HF_HUB_OFFLINE=1 uv run ruff format --check .
+	UV_PROJECT_ENVIRONMENT=/tmp/fvr-ci-venv HF_HUB_OFFLINE=1 uv run mypy
+	UV_PROJECT_ENVIRONMENT=/tmp/fvr-ci-venv HF_HUB_OFFLINE=1 uv run pytest -q
 
 splits:  ## Build and freeze the evaluation splits (needs network)
 	$(PY) python scripts/01_build_splits.py --check-leakage
@@ -60,6 +72,19 @@ train:  ## QLoRA fine-tune (CONFIG=configs/train/qlora_r16.yaml)
 
 train-estimate:  ## Time a few steps and project total GPU-hours, then stop
 	$(PY) python scripts/04_train.py --config $(CONFIG) --estimate-only
+
+verify-recoverable:  ## Prove every artifact survives the lab machine being wiped
+	$(PY) python scripts/09_verify_recoverable.py
+
+teardown:  ## Dry-run the artifact deletion manifest (add EXECUTE=1 to delete)
+	$(PY) python scripts/10_teardown.py $(if $(EXECUTE),--execute,)
+
+errors:  ## Categorise every arm's failures and emit review CSVs
+	$(PY) python scripts/06_error_analysis.py
+
+docker-build:  ## Build both images (train needs CUDA; serve runs on CPU)
+	docker build -f docker/train.Dockerfile -t fine-tune-vs-rag:train .
+	docker build -f docker/serve.Dockerfile -t fine-tune-vs-rag:serve .
 
 clean-pyc:  ## Remove Python caches (never touches .artifacts/)
 	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} + 2>/dev/null || true

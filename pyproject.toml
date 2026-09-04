@@ -123,12 +123,20 @@ module = [
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-# The one module that touches transformers/peft constructors directly. Those
-# ship unannotated callables, so strict mode rejects every call into them.
-# Scoped to this single file rather than relaxed globally — everything else,
-# including all eval and data code, stays fully strict.
-module = ["fvr.models.loader", "fvr.train.qlora"]
+# The modules that touch transformers/peft/trl directly. Those ship unannotated
+# callables, so strict mode rejects every call into them. Scoped to these files
+# rather than relaxed globally — all eval, data and retrieval code stays strict.
+#
+# The GPU stack is an optional extra, so CI type-checks *without* it installed.
+# That changes what mypy sees: an absent `transformers` makes `TrainerCallback`
+# resolve to Any (so subclassing it fails) and makes a `type: ignore` that is
+# required locally look unused. Both settings below exist so one `mypy` run is
+# correct in both environments — a local pass that CI rejects is worse than no
+# check at all.
+module = ["fvr.models.loader", "fvr.train.qlora", "fvr.train.callbacks"]
 disallow_untyped_calls = false
+disallow_subclassing_any = false
+warn_unused_ignores = false
 
 # --------------------------------------------------------------------------- pytest
 [tool.pytest.ini_options]

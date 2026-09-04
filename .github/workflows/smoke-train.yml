@@ -1,0 +1,65 @@
+# Manually triggered smoke train.
+#
+# Separate from CI on purpose: CI is CPU-only and must stay fast, but a training
+# pipeline that only ever runs by hand rots silently. This proves the data path,
+# adapter attachment, loss, checkpointing and resumption end to end.
+#
+# GitHub's hosted runners have no GPU, so this is expected to run on a
+# self-hosted runner. On a hosted runner it validates config parsing and the
+# dataset build, then stops before the model loads.
+name: smoke-train
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: Runner label (use a self-hosted GPU runner for the full run)
+        required: false
+        default: ubuntu-latest
+
+jobs:
+  smoke:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Validate training configs
+        run: |
+          uv run python - <<'PY'
+          from fvr.train.config import load_train_config
+          for name in ("smoke", "qlora_r16"):
+              cfg = load_train_config(f"configs/train/{name}.yaml")
+              print(f"{name}: r={cfg.lora.r} batch={cfg.effective_batch_size} "
+                    f"epochs={cfg.epochs} quant={cfg.quantization}")
+          PY
+
+      - name: Detect GPU
+        id: gpu
+        run: |
+          if command -v nvidia-smi >/dev/null && nvidia-smi -L | grep -q GPU; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No GPU on this runner — stopping after config validation."
+          fi
+
+      - name: Smoke train (20 steps)
+        if: steps.gpu.outputs.available == 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          uv sync --frozen --group dev --extra gpu
+          uv run python scripts/04_train.py --config configs/train/smoke.yaml --no-resume
+
+      - name: Verify the adapter was written
+        if: steps.gpu.outputs.available == 'true'
+        run: test -f .artifacts/checkpoints/qlora-smoke/adapter/adapter_model.safetensors
