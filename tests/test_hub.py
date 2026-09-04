@@ -135,23 +135,24 @@ class TestSpacePlan:
     def test_preserves_nested_paths(self, tmp_path: Path) -> None:
         app = tmp_path / "app"
         (app / "precomputed").mkdir(parents=True)
-        (app / "app.py").write_text("print('hi')", encoding="utf-8")
+        (app / "index.html").write_text("<!doctype html>", encoding="utf-8")
         (app / "precomputed" / "responses.json").write_text("{}", encoding="utf-8")
         plan = plan_space_upload(app, HubTargets(namespace="someone"))
         assert {remote for _, remote in plan.entries} == {
-            "app.py",
+            "index.html",
             "precomputed/responses.json",
         }
 
     def test_requires_an_entry_point(self, tmp_path: Path) -> None:
-        with pytest.raises(FileNotFoundError, match=r"app\.py"):
+        with pytest.raises(FileNotFoundError, match=r"index\.html"):
             plan_space_upload(tmp_path, HubTargets(namespace="someone"))
 
     def test_the_real_space_is_publishable(self) -> None:
         plan = plan_space_upload(PROJECT_ROOT / "app", HubTargets(namespace="someone"))
         published = {remote for _, remote in plan.entries}
-        assert {"app.py", "demo.py", "requirements.txt"} <= published
+        assert {"index.html", "logic.js", "ui.js", "style.css"} <= published
         assert "precomputed/responses.json" in published
+        assert "assets/arms.png" in published
 
 
 class TestRenderPlan:

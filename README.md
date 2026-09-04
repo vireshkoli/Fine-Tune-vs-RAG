@@ -7,6 +7,10 @@ A controlled six-arm benchmark in clinical multiple-choice QA. One base model,
 one frozen 1,000-item test set, one prompt, one GPU. Every number below comes
 from a committed JSON file and regenerates with `make report`.
 
+**[Live demo](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag)** ·
+**[Adapter + model card](https://huggingface.co/vireshk/qwen3-8b-medmcqa-qlora)** ·
+**[Full report](REPORT.md)** · **[Handover](docs/HANDOVER.md)**
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="results/figures/arms-dark.png">
   <img src="results/figures/arms.png" alt="Accuracy, p95 latency and cost per 1,000 queries across arms">
@@ -89,7 +93,7 @@ flowchart LR
 ```bash
 git clone https://github.com/vireshkoli/Fine-Tune-vs-RAG && cd Fine-Tune-vs-RAG
 uv sync --group dev
-make check           # ruff + mypy(strict) + 298 tests — CPU only, no GPU needed
+make check           # ruff + mypy(strict) + 359 tests — CPU only, no GPU needed
 make verify-splits   # proves the frozen test set still hashes identically
 ```
 
@@ -139,6 +143,15 @@ Asserted in tests, not promised in prose:
 
 Full methodology, per-subject breakdowns, error taxonomy and the decision
 framework: **[REPORT.md](REPORT.md)**.
+
+## Artifacts
+
+| | |
+| --- | --- |
+| **Demo** | [huggingface.co/spaces/vireshk/fine-tune-vs-rag](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag) — static, precomputed from the committed runs, so it needs no GPU quota and never sleeps |
+| **Adapter** | [huggingface.co/vireshk/qwen3-8b-medmcqa-qlora](https://huggingface.co/vireshk/qwen3-8b-medmcqa-qlora) — LoRA r=16, with the full model card |
+| **Results** | `results/runs/*.json` — one file per arm, including every per-item prediction |
+| **Resurrection** | [docs/HANDOVER.md](docs/HANDOVER.md) — how to rebuild all of this on another machine after the lab disk is wiped |
 
 ## Stack
 

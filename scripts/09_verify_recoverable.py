@@ -19,7 +19,7 @@ import sys
 from rich.console import Console
 from rich.table import Table
 
-from fvr.ops.hub import ADAPTER_FILES, HubTargets
+from fvr.ops.hub import ADAPTER_FILES, SPACE_ENTRY_POINT, HubTargets
 from fvr.ops.teardown import missing_recoverable_artifacts
 
 console = Console()
@@ -79,7 +79,13 @@ def _hub_checks() -> list[tuple[str, bool, str]]:
     except Exception as exc:
         checks.append(("demo Space published", False, f"{targets.space_repo}: {exc}"))
     else:
-        needed = {"app.py", "demo.py", "requirements.txt", "precomputed/responses.json"}
+        needed = {
+            SPACE_ENTRY_POINT,
+            "logic.js",
+            "ui.js",
+            "style.css",
+            "precomputed/responses.json",
+        }
         missing_space = sorted(needed - space_files)
         checks.append(
             (

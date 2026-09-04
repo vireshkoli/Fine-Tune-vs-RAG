@@ -184,11 +184,16 @@ def plan_adapter_upload(
     return plan
 
 
+#: A static Space serves this file at its root. Named here rather than inlined
+#: because ``app/README.md``'s ``app_file:`` field must agree with it.
+SPACE_ENTRY_POINT = "index.html"
+
+
 def plan_space_upload(app_dir: Path, targets: HubTargets) -> UploadPlan:
     """Resolve the Space upload: every file under ``app/``, paths preserved."""
     app_dir = Path(app_dir)
-    if not (app_dir / "app.py").is_file():
-        raise FileNotFoundError(f"{app_dir} has no app.py")
+    if not (app_dir / SPACE_ENTRY_POINT).is_file():
+        raise FileNotFoundError(f"{app_dir} has no {SPACE_ENTRY_POINT}")
 
     plan = UploadPlan(repo_id=targets.space_repo, repo_type="space")
     for path in sorted(app_dir.rglob("*")):

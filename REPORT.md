@@ -387,7 +387,7 @@ Generalising past this dataset, in the order the questions actually arise:
 ```bash
 git clone https://github.com/vireshkoli/Fine-Tune-vs-RAG && cd Fine-Tune-vs-RAG
 uv sync --group dev
-make check                      # ruff + mypy(strict) + 298 tests, CPU only
+make check                      # ruff + mypy(strict) + 359 tests, CPU only
 make verify-splits              # proves the frozen split still hashes identically
 make setup-gpu                  # GPU extras
 make index CORPUS=parity        # ~11 min
@@ -405,6 +405,26 @@ edited by hand.
 **Environment.** 2× NVIDIA A40 (46 GB), driver 570.133.07 / CUDA 12.8, Python
 3.12, torch 2.11.0+cu128 (the cu128 index is pinned because the default wheel
 needs CUDA 13.0 and this is shared hardware whose driver is not ours to update).
+
+**Published artifacts.** The adapter and its model card are at
+[`vireshk/qwen3-8b-medmcqa-qlora`](https://huggingface.co/vireshk/qwen3-8b-medmcqa-qlora);
+the demo is at
+[`vireshk/fine-tune-vs-rag`](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag).
+Both are published by `make push`, which is dry-run by default and refuses to
+upload a model card missing its not-for-clinical-use statement, or any optimizer
+state. `make verify-recoverable` then queries the Hub and gates teardown on the
+adapter and its card really being there — this benchmark ran on a shared
+university machine whose disk is wiped on completion, so a local copy proves
+nothing. [docs/HANDOVER.md](docs/HANDOVER.md) records how to rebuild everything
+elsewhere.
+
+The demo is a **static** Space. That was forced rather than chosen: Hugging Face
+now requires a PRO subscription to host a Gradio or Docker Space even on free
+`cpu-basic` hardware, while static Spaces remain free for everyone. Because the
+demo was designed precomputed-first — every answer read from the same committed
+run JSONs that produce the tables above — dropping the Python runtime cost
+nothing and removed the cold start. Live free-text inference would need a paid
+GPU runtime and is deferred rather than shipped untested.
 
 **Licences.** MedMCQA is Apache 2.0. MIRIAD is ODC-By 1.0. Qwen3-8B is Apache
 2.0 and ungated; `bge-large-en-v1.5` is MIT. MedQA was deliberately *not* used —
