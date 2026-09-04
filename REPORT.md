@@ -233,6 +233,83 @@ be dishonest, and showing only the overall one would hide a real signal.
 
 ---
 
+## 5.5 Contamination: measured, not assumed
+
+MedMCQA predates Qwen3 and is a widely mirrored public benchmark, so the safe
+prior is that it appears in pretraining. Three probes, on the frozen test set:
+
+### Permutation sensitivity — the strongest probe
+
+Re-score with the answer options shuffled. Same information, different labels. A
+model reasoning over content is unaffected; a model that memorised "this item's
+answer is C" degrades.
+
+| Arm | Original | Permuted | Drop | Verdict |
+| --- | ---: | ---: | ---: | --- |
+| `base` | 0.568 | **0.584** | **−0.016** | no positional memorisation |
+| `qlora` | 0.629 | 0.597 | **+0.032** | mild positional sensitivity |
+
+**The base model does not rely on memorised answer positions at all** — shuffling
+the options made it marginally *better*, well inside noise. Whatever the base
+arm's 56.8% is made of, it is not label recall.
+
+**Fine-tuning made it slightly worse.** `qlora` loses 3.2 points under
+permutation, right at the boundary of the ±3-point noise band. Training on
+30,000 MedMCQA items appears to have introduced a mild positional shortcut that
+the base model did not have. This is a cost of fine-tuning that an accuracy
+table alone would never show, and it slightly deflates the +6.1-point gain.
+
+### Position bias
+
+Gold answers are unevenly distributed (A 32.5%, B 25.2%, C 23.5%, D 18.8%) —
+itself worth knowing about this benchmark. Predictions track it closely:
+
+| Arm | A | B | C | D | Max excess over gold |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| gold | 0.325 | 0.252 | 0.235 | 0.188 | — |
+| `base` | 0.340 | 0.232 | 0.211 | 0.217 | 0.029 |
+| `qlora` | 0.348 | 0.252 | 0.190 | 0.210 | 0.045 |
+
+Neither arm is exploiting the label prior to any meaningful degree.
+
+### Verbatim reproduction — with a chance baseline
+
+Feed half a question stem and let the model continue, then measure content-word
+overlap with the withheld half. **A bare overlap figure is uninterpretable**:
+exam stems are formulaic ("A 45-year-old man presents with…"), so shared
+phrasing alone produces overlap. Each continuation is therefore *also* scored
+against a **different** item's remainder, and only the excess counts.
+
+| Arm | High overlap | Shuffled-reference control | **Excess** |
+| --- | ---: | ---: | ---: |
+| `base` | 10.0% | 1.3% | **+8.7 pts** |
+| `qlora` | 8.7% | 2.0% | **+6.7 pts** |
+
+**This is real.** Roughly **9% of test stems are reproduced verbatim well above
+chance**, which is direct evidence those items were seen in pretraining. The
+control is what makes the claim defensible — without it, "10% overlap" could
+have been entirely genre effect.
+
+### What this means for the headline numbers
+
+Taken together the probes say something more specific than "contaminated" or
+"clean":
+
+- **~9% of items show memorisation of the question text.**
+- **But the model is not using memorised answer labels** — the permutation probe,
+  which is the direct test of that, is flat for `base`.
+
+So some absolute accuracy is inflated by recall of specific items, and every
+arm is inflated by roughly the same amount because they share a base model and a
+test set. **The comparisons between arms — which is what this study is about —
+are largely unaffected**, because contamination is a constant across arms.
+
+The exception is `qlora`, whose mild positional sensitivity is *caused by* the
+fine-tuning rather than inherited. That is a genuine, if small, mark against the
+fine-tuned arm, and it is reported here rather than omitted.
+
+---
+
 ## 6. Statistical honesty
 
 - **Bootstrap 95% CIs** (10,000 resamples) on every accuracy.
@@ -250,11 +327,13 @@ be dishonest, and showing only the overall one would hide a real signal.
 1. **Single seed.** Every result is seed 42. The headline comparisons are paired
    within-seed, which is the stronger test, but training-seed variance for the
    QLoRA arms is unmeasured. Two further seeds are budgeted at ~10 GPU-hours.
-2. **Contamination is unquantified.** MedMCQA predates Qwen3 and is a popular
-   public benchmark, so assuming it is in pretraining is the safe prior. The
-   probes are implemented and tested (`fvr/eval/contamination.py`) but not yet
-   run; until they are, some part of every accuracy figure here may be recall
-   rather than reasoning. **This is the largest open threat to the numbers.**
+2. **Contamination is present but bounded** (§5.5). ~9% of test stems are
+   reproduced verbatim above a chance baseline, so some absolute accuracy is
+   recall. The permutation probe shows the base model does *not* use memorised
+   answer positions, and contamination is roughly constant across arms, so the
+   between-arm comparisons this study is about are largely unaffected. The
+   fine-tuned arm did acquire mild positional sensitivity (+0.032) that the base
+   model lacks.
 3. **The parity and external indices differ 7.3× in size** (218k vs 1.6M
    chunks). The context budget equalises what reaches the model but not
    retrieval difficulty, so §2.2 conflates corpus *content* with corpus *size*.
