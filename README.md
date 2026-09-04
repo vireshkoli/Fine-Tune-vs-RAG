@@ -1,57 +1,157 @@
 # Fine-Tune vs. Retrieve
 
-**When is fine-tuning worth it versus just retrieving?** A controlled head-to-head benchmark in
-clinical QA — four arms, one frozen test set, measured on quality, latency and cost per query.
+**Retrieval beat fine-tuning by 4 points on identical information — and the same
+retrieval over a different corpus was worth exactly nothing.**
 
-> **Status: under construction (Phase 1 of 10).** No results yet. This README is rewritten in
-> Phase 8 with the results table, charts and quickstart. Nothing below is a claim about performance.
->
-> **Not for clinical use. Not medical advice. Not validated on real patients.**
+A controlled six-arm benchmark in clinical multiple-choice QA. One base model,
+one frozen 1,000-item test set, one prompt, one GPU. Every number below comes
+from a committed JSON file and regenerates with `make report`.
 
-## The question
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="results/figures/arms-dark.png">
+  <img src="results/figures/arms.png" alt="Accuracy, p95 latency and cost per 1,000 queries across arms">
+</picture>
 
-Teams argue about this constantly and usually resolve it by intuition. The deliverable here is
-evidence, not a checkpoint:
+## Results
 
-| Arm | Weights | Retrieval |
-| --- | --- | --- |
-| `base` | frozen | none |
-| `rag` | frozen | domain corpus |
-| `qlora` | fine-tuned | none |
-| `qlora-rag` | fine-tuned | domain corpus |
+| Arm | Accuracy | 95% CI | p50 | p95 | Prompt tokens |
+| --- | ---: | :---: | ---: | ---: | ---: |
+| `qlora` — fine-tuned | **62.9%** | [60.0, 65.9] | 102 ms | 112 ms | 113 |
+| `qlora-rag` — fine-tuned + retrieval | 61.4% | [58.4, 64.4] | 179 ms | 195 ms | 738 |
+| `base` — zero-shot | 56.8% | [53.8, 59.9] | 103 ms | 118 ms | 113 |
+| `rag-external` — retrieval only | 56.7% | [53.6, 59.8] | 179 ms | 195 ms | 738 |
 
-All four share the same base weights, prompt scaffolding, decoding settings, hardware and test set.
-Two extra diagnostic arms isolate whether fine-tuning wins by absorbing *information* or merely by
-learning the answer *format*.
+Two **diagnostic** arms retrieve the exact text the fine-tune trained on, which
+is what makes the central comparison possible:
 
-The headline output is a **cost-per-query vs. query-volume curve**. The point where the arms cross
-is the actual answer to "when is fine-tuning worth it," and unlike a single accuracy number it
-generalises past this dataset.
+| Diagnostic arm | Accuracy | vs `base` |
+| --- | ---: | ---: |
+| `rag-parity` | **67.0%** | +10.2 (p<0.0001) |
+| `qlora-rag-parity` | **71.1%** | +14.3 (p<0.0001) |
 
-## Planned stack
+Minimum detectable effect at n=1,000 is **6.3 points**. Comparisons use paired
+McNemar over identical items.
 
-Python 3.12 · uv · QLoRA (`peft` + `bitsandbytes` + `trl`) · FAISS · Weights & Biases ·
-ruff + mypy(strict) + pytest · Docker · GitHub Actions
+## The three findings
+
+**1. On identical information, the index beat the weights.** `rag-parity`
+retrieves the same MedMCQA explanations the fine-tune trained on — same base
+model, same prompt, same facts. Retrieval gained +10.2 points, fine-tuning
++6.1, and the difference between them is significant (p = 0.016).
+
+**2. Retrieval over the wrong corpus was worth nothing.** `rag-external` reads
+1.6M chunks of peer-reviewed literature and scores **+0.001 against base
+(p = 1.000, discordant 121/120)** — a true null, not an underpowered one. Yet
+its retrieval *works*: it surfaces the gold answer in 45.4% of items. Lexical
+presence of an answer is not usable evidence. **The corpus mattered more than
+the technique.**
+
+**3. Fine-tuning repays its training cost at ~200,000 queries.** A *merged*
+adapter has identical inference cost to the base (102 ms vs 103 ms), so
+fine-tuning's advantage is purely prompt length: 113 tokens versus 738.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="results/figures/cost-crossover-dark.png">
+  <img src="results/figures/cost-crossover.png" alt="Cost per 1,000 queries against lifetime query volume">
+</picture>
+
+## Pipeline
+
+```mermaid
+flowchart LR
+  subgraph Data
+    A[MedMCQA<br/>Apache 2.0] --> B[OCR repair<br/>225-entry lexicon]
+    B --> C[Frozen split<br/>SHA-256 pinned]
+  end
+  subgraph Corpora
+    B --> D[parity index<br/>218k chunks]
+    E[MIRIAD<br/>ODC-By] --> F[external index<br/>1.6M chunks]
+  end
+  subgraph Arms
+    G[Qwen3-8B<br/>one loader] --> H[base]
+    G --> I[QLoRA r=16]
+    D --> J[rag-parity]
+    F --> K[rag-external]
+    I --> L[qlora]
+    I --> M[qlora-rag]
+  end
+  C --> N[Paired McNemar<br/>bootstrap CIs]
+  H --> N
+  J --> N
+  K --> N
+  L --> N
+  M --> N
+  N --> O[results/*.json<br/>make report]
+```
 
 ## Quickstart
 
 ```bash
-uv sync --group dev     # CPU-only: lint, type-check, tests
-make check              # ruff + mypy + pytest
-make setup-check        # GPU, disk, cache isolation and HF token scope
+git clone https://github.com/vireshkoli/Fine-Tune-vs-RAG && cd Fine-Tune-vs-RAG
+uv sync --group dev
+make check           # ruff + mypy(strict) + 298 tests — CPU only, no GPU needed
+make verify-splits   # proves the frozen test set still hashes identically
 ```
 
-Full reproduction instructions land in Phase 8, once there are numbers to reproduce.
+With a GPU:
 
-## Notes on how this is built
+```bash
+make setup-gpu
+make index CORPUS=parity                          # ~11 min
+make train CONFIG=configs/train/qlora_r16.yaml    # ~5.1 GPU-hours
+make eval ARM=base
+make report                                       # regenerates tables + figures
+```
 
-- **Nothing lives only on disk.** Every artifact is reconstructible from GitHub and the Hugging Face
-  Hub, because the GPU used to build this is shared university hardware that gets vacated on
-  completion. Model revision SHAs are pinned for the same reason.
-- **Caches are project-local.** `HF_HOME` and friends point into `.artifacts/`, so this project never
-  writes into a shared cache it does not own.
-- **Weights and datasets never enter git.** Adapters go to the Hub.
+## How fairness is enforced
+
+Asserted in tests, not promised in prose:
+
+- **One `from_pretrained`** in the codebase; arms share the same model object.
+- **One prompt builder** — stripping a RAG prompt's context must reproduce the
+  non-RAG prompt byte for byte, and the *training* prompt is built by the same
+  function.
+- **Constrained A/B/C/D log-prob scoring**, never free generation — otherwise
+  fine-tuned arms gain from learned formatting rather than knowledge.
+- **Shared 3,000-character context budget** across RAG arms, so corpus quality
+  is not confounded with context length.
+- **Indices built from train-side text only**, gated on content hash — a test
+  item's explanation cannot enter an index under a different id.
+- **Pinned model revisions**; **fixed batch size** (it perturbs bf16 numerics).
+
+## Honest limitations
+
+- **Single seed.** All results are seed 42. Headline comparisons are paired
+  within-seed — the stronger test — but training-seed variance is unmeasured.
+- **Contamination is unquantified.** MedMCQA predates Qwen3 and is a popular
+  public benchmark. Probes are implemented and tested but **not yet run**; until
+  they are, some of every accuracy figure here may be recall rather than
+  reasoning. This is the largest open threat to the numbers.
+- **31.3% of MedMCQA's labelled pool is dentistry**, the subject where retrieval
+  helps least. Excluding it, `rag-parity` reaches 74.2% and `base` 59.8% — the
+  headline *understates* the effect on genuinely medical subjects.
+- **The two indices differ 7.3× in size**, so the parity-vs-external contrast
+  conflates corpus content with corpus size.
+- **No free-text evaluation**; all results are 4-option MCQ.
+
+Full methodology, per-subject breakdowns, error taxonomy and the decision
+framework: **[REPORT.md](REPORT.md)**.
+
+## Stack
+
+Python 3.12 · uv · Qwen3-8B (Apache 2.0) · QLoRA via `peft`/`bitsandbytes`/`trl`
+· FAISS · `bge-large-en-v1.5` · ruff + mypy(strict) + pytest · GitHub Actions
+
+Built on shared university GPUs, so every artifact is reconstructible from
+GitHub and the Hugging Face Hub alone: caches are pinned inside the project,
+model revisions are pinned to commit SHAs, and teardown can only ever delete one
+directory.
+
+> **Not for clinical use. Not medical advice. Not validated on real patients.**
 
 ## Licence
 
-MIT for the code. Datasets and models retain their own licences, recorded in `REPORT.md`.
+MIT for the code. MedMCQA is Apache 2.0; MIRIAD is ODC-By 1.0. MedQA was
+deliberately not used — `bigbio/med_qa` declares its licence "unknown", and a
+re-uploader's `cc-by-4.0` tag does not launder upstream copyright on USMLE
+board-prep material.

@@ -1,0 +1,42 @@
+{
+  "base": {
+    "confident_wrong": 372,
+    "near_miss": 11,
+    "wrong": 49
+  },
+  "qlora": {
+    "broken_by_retrieval": 58,
+    "confident_wrong": 110,
+    "fixed_by_retrieval": 119,
+    "near_miss": 61,
+    "wrong": 142
+  },
+  "qlora-rag": {
+    "broken_by_retrieval": 96,
+    "confident_wrong": 100,
+    "fixed_by_retrieval": 142,
+    "near_miss": 54,
+    "wrong": 136
+  },
+  "qlora-rag-parity": {
+    "broken_by_retrieval": 69,
+    "confident_wrong": 77,
+    "fixed_by_retrieval": 212,
+    "near_miss": 37,
+    "wrong": 106
+  },
+  "rag-external": {
+    "broken_by_retrieval": 121,
+    "confident_wrong": 280,
+    "fixed_by_retrieval": 120,
+    "near_miss": 2,
+    "wrong": 30
+  },
+  "rag-parity": {
+    "broken_by_retrieval": 88,
+    "confident_wrong": 214,
+    "fixed_by_retrieval": 190,
+    "near_miss": 6,
+    "wrong": 22
+  }
+}
