@@ -40,6 +40,21 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=None, help="evaluate only the first N items")
     parser.add_argument("--adapter", default=None, help="LoRA adapter path for fine-tuned arms")
     parser.add_argument("--retrieval-config", default="configs/retrieval/bge_large.yaml")
+    parser.add_argument(
+        "--corpus",
+        default=None,
+        help="override the arm's index directory (for size-matched or re-embedded corpora)",
+    )
+    parser.add_argument(
+        "--out-dir",
+        default=None,
+        help="write under results/<dir>/ instead of results/runs/ (use for ablations)",
+    )
+    parser.add_argument(
+        "--tag",
+        default=None,
+        help="output filename stem; defaults to <arm>_seed<N>",
+    )
     args = parser.parse_args()
 
     config = load_config()
@@ -53,7 +68,8 @@ def main() -> int:
         console.print(f"[red]Arm {arm.name!r} needs --adapter (training lands in Phase 5).[/]")
         return 1
 
-    index_dir = paths.indices / arm.corpus if arm.uses_retrieval else None
+    corpus = args.corpus or arm.corpus
+    index_dir = paths.indices / corpus if arm.uses_retrieval else None
     if index_dir is not None and not (index_dir / "index.faiss").is_file():
         console.print(
             f"[red]Arm {arm.name!r} needs the {arm.corpus!r} index. "
@@ -112,7 +128,7 @@ def main() -> int:
         console.print(f"  {len(retriever.index):,} passages indexed")
         retrieve = retriever.retrieve_many
         retrieval_info = {
-            "corpus": arm.corpus,
+            "corpus": corpus,
             "n_passages": len(retriever.index),
             "embedder": embedder_config.name,
             "embedder_revision": embedder_config.revision,
@@ -140,7 +156,12 @@ def main() -> int:
             progress=tick,
         )
 
-    out = paths.results / "runs" / f"{arm.name}_seed{seed}.json"
+    # Ablations write elsewhere on purpose: results/runs/ feeds the headline
+    # tables, and a top-k sweep landing there would silently average six
+    # different retrieval settings into one reported arm.
+    out_dir = paths.results / (args.out_dir or "runs")
+    out = out_dir / f"{args.tag or f'{arm.name}_seed{seed}'}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
     result.write(out)
 
     console.print()

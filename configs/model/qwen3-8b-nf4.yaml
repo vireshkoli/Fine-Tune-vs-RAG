@@ -1,0 +1,25 @@
+# Serving-quantisation ablation: the same base weights served in 4-bit NF4
+# instead of bf16. Everything else is identical to configs/model/qwen3-8b.yaml.
+#
+# This answers "what does quantising the deployment cost?" — a question the main
+# benchmark deliberately refuses to entangle with its headline, because measuring
+# one arm quantised and another not would break the comparison. So it is an
+# ablation with its own control, not a shortcut in the main matrix.
+#
+# Only the untrained arms are run this way. Merging a bf16 LoRA into an NF4 base
+# would have to dequantise first, so the loader refuses it outright — see
+# attach_adapter(). A quantised fine-tuned arm would therefore be measuring
+# something other than the configured model.
+
+name: qwen3-8b-nf4
+repo_id: Qwen/Qwen3-8B
+revision: b968826d9c46dd6066d109eabc6255188de91218  # pragma: allowlist secret
+
+dtype: bfloat16          # the compute dtype; storage is 4-bit
+quantization: nf4
+device: 0
+
+enable_thinking: false
+max_seq_length: 4096
+max_new_tokens: 8
+temperature: 0.0

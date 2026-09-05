@@ -72,6 +72,18 @@ def main() -> int:
     )
     parser.add_argument("--max-chunks", type=int, default=None)
     parser.add_argument(
+        "--name",
+        default=None,
+        help="index directory name; defaults to --corpus. Use for size-matched "
+        "or re-embedded variants so they do not overwrite the originals.",
+    )
+    parser.add_argument(
+        "--keep-embeddings",
+        action="store_true",
+        help="keep the raw embedding memmap after the index is built (it is a "
+        "duplicate of what IndexFlatIP already stores, and twice the disk)",
+    )
+    parser.add_argument(
         "--estimate-only",
         action="store_true",
         help="report corpus size and projected embedding time, then stop",
@@ -122,7 +134,7 @@ def main() -> int:
         )
         return 0
 
-    out_dir = paths.indices / args.corpus
+    out_dir = paths.indices / (args.name or args.corpus)
     memmap_path = out_dir / "embeddings.f32"
     console.print(f"Embedding {len(passages):,} chunks with {embedder_config.name}…")
 
@@ -153,7 +165,8 @@ def main() -> int:
     (out_dir / "build_stats.json").write_text(
         json.dumps(
             {
-                "corpus": args.corpus,
+                "corpus": args.name or args.corpus,
+                "base_corpus": args.corpus,
                 "chunks": stats.chunks,
                 "source_documents": stats.source_documents,
                 "excluded_documents": stats.excluded_documents,
@@ -168,6 +181,17 @@ def main() -> int:
         + "\n",
         encoding="utf-8",
     )
+    # IndexFlatIP stores the vectors itself, so the memmap is an exact duplicate
+    # of the index contents and is never read again — not by load_index, not by
+    # the retriever. Keeping it doubles the disk cost of every index (6.5 GiB for
+    # the external corpus alone), which matters on a shared box. Rebuilding from
+    # scratch re-embeds, which is the documented path anyway.
+    if not args.keep_embeddings:
+        freed = memmap_path.stat().st_size if memmap_path.is_file() else 0
+        memmap_path.unlink(missing_ok=True)
+        if freed:
+            console.print(f"  removed the build memmap ({freed / 2**30:.1f} GiB reclaimed)")
+
     console.print(f"[green]Wrote {out_dir}[/] ({elapsed / 60:.1f} min of GPU time)")
     return 0
 

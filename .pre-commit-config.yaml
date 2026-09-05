@@ -15,7 +15,12 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    # Must track the ruff version in pyproject.toml's dev group. When it did
+    # not (v0.8.6 here against 0.16.x there) the two disagreed about how to wrap
+    # a long `assert ..., "message"`, and each undid the other: the hook
+    # reformatted on commit, `make lint` then failed, reformatting it back. CI
+    # runs the project's ruff, so that is the version this has to match.
+    rev: v0.16.1
     hooks:
       - id: ruff
         args: ["--fix"]

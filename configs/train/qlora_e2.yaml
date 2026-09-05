@@ -1,0 +1,63 @@
+# Epoch ablation: 2 epochs against the 1-epoch control. Everything else is held
+# identical to configs/train/qlora_r16.yaml.
+#
+# The control deliberately does one pass over 30k unique rows rather than N
+# passes over 30k/N. This sweep tests that choice directly: does a second and
+# third look at the same rows buy anything, or does it just overfit? Cost scales
+# linearly, so this is the single most expensive ablation in the grid.
+
+name: qlora-e2
+model_config_path: configs/model/qwen3-8b.yaml
+
+lora:
+  r: 16
+  alpha: 32          # the usual 2x r; alpha/r sets the effective adapter scale
+  dropout: 0.05
+  # Attention and MLP. Attention-only adapters underfit knowledge-heavy tasks
+  # because most factual capacity sits in the MLP blocks.
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+# 4-bit NF4 with double quantisation — the "Q" in QLoRA. ~5.5GB for an 8B base,
+# which is what keeps this reproducible on a 16GB card, not just on an A40.
+quantization: nf4
+
+learning_rate: 2.0e-4
+lr_scheduler: cosine
+warmup_ratio: 0.03
+weight_decay: 0.0
+max_grad_norm: 1.0
+
+# One pass over 30k unique rows rather than two passes over 15k: the compute is
+# identical and more unique data beats repetition for knowledge acquisition.
+# Epochs are swept as a Phase 7 ablation rather than assumed.
+epochs: 2.0
+per_device_batch_size: 4
+gradient_accumulation_steps: 4     # effective batch 16
+max_seq_length: 1024
+# Measured, not assumed. Turning this OFF on a free 46GB A40 was *slower*
+# (33.4 s/step vs 9.8) and still OOM'd at step 9: the activation memory it saves
+# matters more than the recomputation it costs. Also what keeps the recipe
+# runnable on a 16GB card.
+gradient_checkpointing: true
+
+# A random seeded subset of the ~179k clean train rows. At a measured 9.8 s/step
+# on an exclusive A40, 30k rows at effective batch 16 is 1,875 steps ~= 5.1
+# GPU-hours, which fits the per-run budget with room for three seeds.
+max_train_samples: 30000
+
+# Train on the answer letter followed by the explanation. The rag-parity index
+# serves exactly these explanations, so the fine-tune must see the same text for
+# "weights versus index" to be the only difference between the arms.
+include_explanation: true
+
+# Frequent enough that an interruption costs minutes. Training is assumed to
+# fail at least once, so this is a design parameter, not a default.
+save_steps: 200
+eval_steps: 200
+logging_steps: 10
+save_total_limit: 3
+metric_for_best_model: eval_loss
+
+seed: 42
+optim: paged_adamw_8bit
+report_to: none
