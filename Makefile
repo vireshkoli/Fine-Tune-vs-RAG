@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc space-data push-dry push
+.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc space-data push-dry push matrix matrix-run
 
 PY := uv run
 
@@ -93,6 +93,14 @@ push-dry:  ## Print the exact Hub upload manifest without uploading anything
 
 push:  ## Publish the adapter and the demo Space to the Hugging Face Hub
 	$(PY) python scripts/08_push_to_hub.py --build-data --execute
+
+GROUP ?=
+
+matrix:  ## Show the full experiment grid and its GPU-hour budget (runs nothing)
+	$(PY) python scripts/11_run_matrix.py $(if $(GROUP),--only $(GROUP),)
+
+matrix-run:  ## Run the pending grid; waits for an exclusive GPU (GROUP=rank for one group)
+	$(PY) python scripts/11_run_matrix.py --execute --wait-for-gpu $(if $(GROUP),--only $(GROUP),)
 
 docker-build:  ## Build both images (train needs CUDA; serve runs on CPU)
 	docker build -f docker/train.Dockerfile -t fine-tune-vs-rag:train .

@@ -1,0 +1,26 @@
+# Cross-base robustness check: does the fine-tune-versus-retrieve conclusion
+# hold on a second base model, or is it a fact about Qwen3?
+#
+# Llama-3.1-8B-Instruct is `gated: manual` on the Hub. It is used here only
+# because the author already holds access; nothing on the project's *critical
+# path* is gated, which is why Qwen3-8B is the primary base. A reproducer
+# without access can skip this ablation and lose nothing but this one section.
+#
+# Note the licence differs from the rest of the project: Llama 3.1 Community,
+# not Apache 2.0. No adapter trained on it is published, precisely so the
+# "derivative models must be named Llama-*" clause is never triggered.
+
+name: llama31-8b
+repo_id: meta-llama/Llama-3.1-8B-Instruct
+revision: 0e9e39f249a16976918f6564b8830bc894c89659  # pragma: allowlist secret
+
+dtype: bfloat16
+device: 0
+
+# Llama has no thinking mode. The engine passes this only when the chat template
+# accepts it, so the flag is inert here rather than an error.
+enable_thinking: false
+
+max_seq_length: 4096
+max_new_tokens: 8
+temperature: 0.0

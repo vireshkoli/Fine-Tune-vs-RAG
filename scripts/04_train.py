@@ -73,6 +73,12 @@ def main() -> int:
     parser.add_argument("--no-resume", action="store_true", help="ignore existing checkpoints")
     parser.add_argument("--max-steps", type=int, default=None)
     parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="override the config seed; the run is renamed so seeds never collide",
+    )
+    parser.add_argument(
         "--estimate-only",
         action="store_true",
         help="time a few steps, project total GPU-hours, then stop",
@@ -82,6 +88,13 @@ def main() -> int:
     project = load_config()
     paths = bootstrap_env(project)
     train_config = load_train_config(args.config)
+    if args.seed is not None and args.seed != train_config.seed:
+        # Rename as well as reseed. Sharing an output directory between seeds
+        # would have the second run resume from the first one's checkpoint and
+        # quietly report a two-seed average as a single seed.
+        train_config = train_config.model_copy(
+            update={"seed": args.seed, "name": f"{train_config.name}-seed{args.seed}"}
+        )
     model_config = load_model_config(train_config.model_config_path)
     physical_device = model_config.device
     # Renumbered: with CUDA_VISIBLE_DEVICES set, the target GPU is index 0.

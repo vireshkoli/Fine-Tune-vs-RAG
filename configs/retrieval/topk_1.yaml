@@ -1,0 +1,37 @@
+# top-k ablation: k=1 against the k=5 control. The embedder and the character
+# budget are held identical to configs/retrieval/bge_large.yaml.
+#
+# Note what the shared 3,000-character budget does here: raising k does not
+# simply add context, it adds *candidates* competing for the same budget. So
+# this sweep measures precision-vs-coverage at fixed cost, which is the tradeoff
+# a deployment actually faces — not "does more context help", which is trivially
+# yes and confounds quality with prefill spend.
+
+embedder:
+  name: bge-large-en-v1.5
+  repo_id: BAAI/bge-large-en-v1.5
+  revision: d4aa6901d3a41ba39fb536a557fa166f842b0e09  # pragma: allowlist secret
+  dimensions: 1024
+  # The model's hard limit. Corpus chunks are sized well under this so nothing
+  # is silently truncated out of the index.
+  max_seq_length: 512
+  batch_size: 256
+  device: 1
+  # float32 (the SentenceTransformer default) runs 4.3x slower on an A40:
+  # 248 vs 1,054 chunks/s. Checked equivalent for retrieval before switching —
+  # cosine >= 0.9995 vs fp32, top-1 agreement 1.000, top-5 overlap 0.998.
+  dtype: float16
+  normalize: true
+  # bge is trained for asymmetric retrieval: the instruction goes on queries
+  # only. Applying it to documents too, or to neither, measurably hurts recall.
+  query_prefix: "Represent this sentence for searching relevant passages: "
+
+retrieval:
+  top_k: 1
+  # Shared by rag-external and rag-parity. The two corpora have different
+  # natural chunk lengths, so a fixed k would give one arm more context than
+  # the other and confound quality with prefill cost. Budgeting characters
+  # makes the arms cost the same and differ only in content.
+  max_context_chars: 3000
+  min_score: 0.0
+  rerank: false
