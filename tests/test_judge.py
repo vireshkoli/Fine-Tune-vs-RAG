@@ -1,0 +1,261 @@
+"""The LLM judge.
+
+A judge is the weakest link in any evaluation that uses one, so these tests are
+about its failure modes rather than its happy path: replies it cannot parse,
+preferences that flip when the answers swap places, and the skewed-scale trap
+where a judge that always says "2" looks 85% accurate.
+
+The judge is injected as a callable, so all of this runs on CPU with a scripted
+stand-in and no model is ever loaded.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+
+import pytest
+
+from fvr.eval.judge import (
+    Agreement,
+    ArmJudgement,
+    PairwiseResult,
+    UnparseableVerdictError,
+    cohens_kappa,
+    compare_pairwise,
+    parse_score,
+    parse_verdict,
+    score_pointwise,
+    summarise_pairwise,
+)
+from fvr.prompts.judge import (
+    RUBRIC_VERSION,
+    build_pairwise_prompt,
+    build_pointwise_prompt,
+)
+
+
+def scripted(replies: list[str]):
+    """A judge that returns each reply in turn."""
+    stream: Iterator[str] = iter(replies)
+
+    def judge(_messages: list[dict[str, str]]) -> str:
+        return next(stream)
+
+    return judge
+
+
+def always(reply: str):
+    def judge(_messages: list[dict[str, str]]) -> str:
+        return reply
+
+    return judge
+
+
+class TestParsing:
+    @pytest.mark.parametrize(
+        ("reply", "expected"),
+        [
+            ("SCORE: 2", 2),
+            ("SCORE:0", 0),
+            ("score: 1", 1),
+            ("Reasoning aside.\nSCORE: 2\n", 2),
+        ],
+    )
+    def test_reads_a_score(self, reply: str, expected: int) -> None:
+        assert parse_score(reply) == expected
+
+    @pytest.mark.parametrize("reply", ["", "I think it is fine", "SCORE: seven", "SCORE: 5"])
+    def test_refuses_an_unparseable_score(self, reply: str) -> None:
+        """A missing score must not be silently counted as a zero.
+
+        Pooling parse failures with genuine disagreements would deflate every
+        arm by however often the judge went off-format.
+        """
+        with pytest.raises(UnparseableVerdictError):
+            parse_score(reply)
+
+    @pytest.mark.parametrize(
+        ("reply", "expected"),
+        [("VERDICT: A", "A"), ("VERDICT: B", "B"), ("verdict: tie", "TIE")],
+    )
+    def test_reads_a_verdict(self, reply: str, expected: str) -> None:
+        assert parse_verdict(reply) == expected
+
+    def test_refuses_an_unparseable_verdict(self) -> None:
+        with pytest.raises(UnparseableVerdictError):
+            parse_verdict("Both are good")
+
+
+class TestPointwise:
+    def test_averages_across_seeds(self) -> None:
+        result = score_pointwise(
+            "q1", "Q?", "ref", "cand", scripted(["SCORE: 2", "SCORE: 1", "SCORE: 2"])
+        )
+        assert result.scores == (2, 1, 2)
+        assert result.mean == pytest.approx(5 / 3)
+        assert result.sd > 0
+
+    def test_reports_zero_variance_when_the_judge_is_consistent(self) -> None:
+        result = score_pointwise("q1", "Q?", "ref", "cand", always("SCORE: 2"))
+        assert result.sd == 0.0
+        assert result.normalised == 1.0
+
+    def test_counts_unparseable_replies_separately_from_zeros(self) -> None:
+        """The distinction the whole design rests on."""
+        result = score_pointwise(
+            "q1", "Q?", "ref", "cand", scripted(["SCORE: 2", "no idea", "SCORE: 2"])
+        )
+        assert result.scores == (2, 2)
+        assert result.unparseable == 1
+        assert result.normalised == 1.0, "a failed parse must not drag the score down"
+
+    def test_normalises_onto_the_accuracy_scale(self) -> None:
+        assert score_pointwise("q", "Q", "r", "c", always("SCORE: 1")).normalised == 0.5
+
+    def test_an_empty_candidate_still_reaches_the_judge(self) -> None:
+        prompt = build_pointwise_prompt("Q?", "ref", "   ")
+        assert "(no answer given)" in prompt.user
+
+
+class TestPairwisePositionBias:
+    def test_consistent_preference_names_a_winner(self) -> None:
+        # Forward says A; reversed says B, which *is* A once flipped back.
+        result = compare_pairwise(
+            "q1",
+            "Q?",
+            "ref",
+            "arm-a",
+            "answer a",
+            "arm-b",
+            "answer b",
+            scripted(["VERDICT: A", "VERDICT: B"]),
+        )
+        assert not result.inconsistent
+        assert result.winner == "arm-a"
+
+    def test_a_preference_that_flips_with_order_is_not_a_result(self) -> None:
+        """A judge that prefers whichever answer came first has told us nothing."""
+        result = compare_pairwise(
+            "q1",
+            "Q?",
+            "ref",
+            "arm-a",
+            "answer a",
+            "arm-b",
+            "answer b",
+            scripted(["VERDICT: A", "VERDICT: A"]),
+        )
+        assert result.inconsistent
+        assert result.winner is None
+
+    def test_a_tie_is_preserved_rather_than_broken(self) -> None:
+        result = compare_pairwise(
+            "q1",
+            "Q?",
+            "ref",
+            "arm-a",
+            "a",
+            "arm-b",
+            "b",
+            scripted(["VERDICT: TIE", "VERDICT: TIE"]),
+        )
+        assert not result.inconsistent
+        assert result.winner is None
+
+    def test_summary_reports_the_judges_own_error_rate(self) -> None:
+        results = [
+            PairwiseResult("1", "a", "b", "A", "A", False),
+            PairwiseResult("2", "a", "b", "B", "B", False),
+            PairwiseResult("3", "a", "b", "A", "B", True),
+            PairwiseResult("4", "a", "b", "TIE", "TIE", False),
+        ]
+        summary = summarise_pairwise(results)
+        assert (summary.a_wins, summary.b_wins, summary.ties) == (1, 1, 1)
+        assert summary.inconsistent == 1
+        assert summary.position_bias_rate == 0.25
+        assert summary.as_json()["rubric_version"] == RUBRIC_VERSION
+
+    def test_both_orderings_are_actually_sent(self) -> None:
+        seen: list[str] = []
+
+        def judge(messages: list[dict[str, str]]) -> str:
+            seen.append(messages[1]["content"])
+            return "VERDICT: TIE"
+
+        compare_pairwise("q", "Q?", "ref", "a", "FIRST", "b", "SECOND", judge)
+        assert len(seen) == 2
+        assert seen[0].index("FIRST") < seen[0].index("SECOND")
+        assert seen[1].index("SECOND") < seen[1].index("FIRST")
+
+
+class TestAgreement:
+    def test_perfect_agreement_on_varied_labels(self) -> None:
+        agreement = cohens_kappa([2, 1, 0, 2, 1], [2, 1, 0, 2, 1])
+        assert agreement.exact_agreement == 1.0
+        assert agreement.kappa == pytest.approx(1.0)
+        assert agreement.verdict() == "almost perfect"
+
+    def test_a_constant_judge_scores_zero_not_high(self) -> None:
+        """The trap κ exists to catch.
+
+        A judge that always says 2 agrees with a 2-heavy human 80% of the time
+        by doing nothing at all. Raw agreement rewards it; κ does not.
+        """
+        human = [2, 2, 2, 2, 1]
+        machine = [2, 2, 2, 2, 2]
+        agreement = cohens_kappa(human, machine)
+        assert agreement.exact_agreement == 0.8
+        assert agreement.kappa == pytest.approx(0.0, abs=1e-9)
+        assert agreement.verdict() == "slight"
+
+    def test_systematic_disagreement_goes_negative(self) -> None:
+        assert cohens_kappa([2, 0, 2, 0], [0, 2, 0, 2]).kappa < 0
+
+    def test_rejects_mismatched_lengths(self) -> None:
+        with pytest.raises(ValueError, match="length mismatch"):
+            cohens_kappa([1, 2], [1])
+
+    def test_rejects_empty_input(self) -> None:
+        with pytest.raises(ValueError, match="no labels"):
+            cohens_kappa([], [])
+
+    def test_bands_are_reported_so_the_number_is_not_left_bare(self) -> None:
+        assert Agreement(50, 0.9, 0.75).verdict() == "substantial"
+        assert Agreement(50, 0.5, 0.35).verdict() == "fair"
+        assert Agreement(50, 0.1, -0.2).verdict() == "worse than chance"
+
+
+class TestArmJudgement:
+    def test_aggregates_scores_and_judge_variance(self) -> None:
+        judgement = ArmJudgement(arm="qlora")
+        judgement.results = [
+            score_pointwise("1", "Q", "r", "c", always("SCORE: 2")),
+            score_pointwise("2", "Q", "r", "c", scripted(["SCORE: 0", "SCORE: 2", "SCORE: 1"])),
+        ]
+        assert judgement.mean_score == pytest.approx((1.0 + 0.5) / 2)
+        assert judgement.judge_sd > 0
+        assert judgement.as_json()["n"] == 2
+
+    def test_empty_is_zero_rather_than_an_error(self) -> None:
+        assert ArmJudgement(arm="none").mean_score == 0.0
+
+
+class TestRubricIsFrozen:
+    def test_both_rubrics_demand_a_parseable_format(self) -> None:
+        pointwise = build_pointwise_prompt("Q?", "ref", "cand")
+        pairwise = build_pairwise_prompt("Q?", "ref", "a", "b")
+        assert "SCORE:" in pointwise.user
+        assert "VERDICT:" in pairwise.user
+
+    def test_the_rubric_grades_against_the_reference_not_the_judges_opinion(self) -> None:
+        """The design choice: the judge reads, it does not practise medicine."""
+        prompt = build_pointwise_prompt("Q?", "ref", "cand")
+        assert "REFERENCE" in prompt.user
+        assert "not being asked for your own medical opinion" in prompt.system
+
+    def test_the_rubric_forbids_rewarding_style(self) -> None:
+        for prompt in (
+            build_pointwise_prompt("Q?", "r", "c"),
+            build_pairwise_prompt("Q?", "r", "a", "b"),
+        ):
+            assert "length" in prompt.user
