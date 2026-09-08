@@ -82,6 +82,62 @@ retriever; that is the entire reason groundedness is measured.
 same context budget, same prompt: one corpus is worth ten points and the other
 is worth zero.
 
+#### The size confound, removed
+
+The obvious objection to the paragraph above is that the two indices are not
+the same size: parity holds 217,661 chunks and external 1,598,753, a 7.3x gap.
+A larger index is a harder retrieval problem, so "parity beats external" could
+have been "small beats large" wearing a disguise.
+
+So external was rebuilt at **exactly** the parity chunk count — 217,661 chunks,
+same embedder, same budget, same k — and re-run.
+
+| Corpus | Chunks | Accuracy | Retrieval hit rate |
+| --- | ---: | ---: | ---: |
+| `parity` | 217,661 | **67.0%** | 0.570 |
+| `base`, no retrieval | — | 56.8% | — |
+| `external`, full | 1,598,753 | 56.7% | 0.454 |
+| `external`, size-matched | 217,661 | **50.6%** | 0.319 |
+
+| Comparison | Delta | Discordant | p |
+| --- | ---: | ---: | ---: |
+| `parity` vs `external`-matched | **+16.4** | 235/71 | 1.2e-20 |
+| `parity` vs `external`-full | +10.3 | 178/75 | 1.4e-10 |
+| `external`-matched vs `base` | **-6.2** | 86/148 | 6.7e-05 |
+
+**The confound was real and it ran the other way.** At equal size the gap does
+not shrink, it grows — from +10.3 to +16.4. Size was helping the external arm,
+not the parity arm, which is what the hit rate says too: shrinking the corpus
+cost external more than a third of its retrieval hits (0.454 to 0.319). The
+headline understated the content effect rather than inflating it.
+
+#### A thin wrong corpus is worse than no corpus
+
+The size-matched arm also produces a finding the full-size one could not.
+Against `base`, full-size external was a *true null* (+0.001, p = 1.000).
+Size-matched, it lands **6.2 points below base at p = 6.7e-05** — significantly
+worse than not retrieving at all.
+
+So §2.2's claim is too kind. Retrieval over the wrong corpus is not merely
+worth nothing; below some retrieval-quality floor, injected context stops being
+neutral filler and starts talking a correct model out of right answers. For a
+team deciding whether to ship RAG, "we have a domain corpus" is not
+automatically a safe default — a corpus that retrieves poorly is a regression,
+not a wash.
+
+**Fine-tuning absorbs about half the damage.** The same degradation measured on
+the fine-tuned arm is smaller:
+
+| Arm | Full external | Size-matched | Delta |
+| --- | ---: | ---: | ---: |
+| no fine-tune (`rag-external`) | 56.7% | 50.6% | **-6.2** vs base |
+| fine-tuned (`qlora-rag`) | 61.4% | 59.1% | **-3.8** vs `qlora` (p = 0.0096) |
+
+Both degrade, but the weights hold part of the line when the context misleads.
+That is a robustness argument for fine-tuning that the accuracy table alone
+does not make: its value is not only the +6.1 points, it is also that a bad
+retrieval day costs less.
+
 ### 2.3 Fine-tuning and retrieval compose — but only over a corpus that works
 
 `qlora-rag-parity` (71.1%) beats `rag-parity` (67.0%) by +4.1 points
@@ -334,10 +390,10 @@ fine-tuned arm, and it is reported here rather than omitted.
    between-arm comparisons this study is about are largely unaffected. The
    fine-tuned arm did acquire mild positional sensitivity (+0.032) that the base
    model lacks.
-3. **The parity and external indices differ 7.3× in size** (218k vs 1.6M
-   chunks). The context budget equalises what reaches the model but not
-   retrieval difficulty, so §2.2 conflates corpus *content* with corpus *size*.
-   A size-matched external subsample would separate them.
+3. ~~The parity and external indices differ 7.3× in size.~~ **Resolved**
+   (§2.2). External was rebuilt at exactly 217,661 chunks and re-run: the gap
+   grew from +10.3 to +16.4 points, so the effect is corpus content, not corpus
+   size, and the original figure understated it.
 4. **No free-text evaluation.** All results are 4-option MCQ scored by
    constrained log-prob. An LLM-judged free-text arm is designed but unrun.
 5. **One epoch, one LoRA rank.** Hyperparameters were chosen from measurement
