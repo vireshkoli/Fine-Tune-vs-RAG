@@ -1,0 +1,40 @@
+# The LLM judge for the free-text arms.
+#
+# Llama-3.3-70B at 4-bit AWQ, ~37 GiB. A 70B judge scoring 8B arms is the right
+# asymmetry, and it is cross-family from Qwen3-8B, so the self-preference
+# objection never arises: a judge cannot favour its own outputs when it shares
+# no lineage with any arm it grades.
+#
+# This is a community AWQ re-upload of a gated model. The re-upload itself is
+# ungated (550k downloads), so reproducing needs no access request. The Llama
+# 3.3 licence still applies and is credited in REPORT.md; the judge is internal
+# measurement apparatus and is never released, so the "derivative models must be
+# named Llama-*" clause is not triggered.
+#
+# Quantisation is fine here in a way it would not be for a measured arm: the
+# judge is apparatus applied identically to every arm, so its precision cannot
+# bias the comparison in any arm's favour.
+
+name: llama-3.3-70b-awq
+repo_id: casperhansen/llama-3.3-70b-instruct-awq
+revision: 64d255621f40b42adaf6d1f32a47e1d4534c0f14  # pragma: allowlist secret
+
+# vLLM serves this over an OpenAI-compatible API in its own virtualenv. It is
+# deliberately not imported into this project: vLLM pins torch hard, this
+# project pins torch 2.11.0+cu128 for a CUDA 12.8 driver that is not ours to
+# update, and a sync that rewrote torch mid-run would break an in-flight grid.
+base_url: http://127.0.0.1:8000/v1
+
+# Non-zero on purpose. Judge seed-to-seed spread is a reported number; at
+# temperature 0 it would be exactly zero, which would say nothing about how
+# stable the judge is and would look like a strong result.
+temperature: 0.3
+seeds: [0, 1, 2]
+
+# The rubric asks for one line. A larger budget only buys the judge room to
+# ramble before answering, which the parser then has to survive.
+max_tokens: 16
+
+timeout_s: 120.0
+max_retries: 3
+backoff_s: 2.0

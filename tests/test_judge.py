@@ -39,14 +39,14 @@ def scripted(replies: list[str]) -> JudgeFn:
     """A judge that returns each reply in turn."""
     stream: Iterator[str] = iter(replies)
 
-    def judge(_messages: list[dict[str, str]]) -> str:
+    def judge(_messages: list[dict[str, str]], _seed: int) -> str:
         return next(stream)
 
     return judge
 
 
 def always(reply: str) -> JudgeFn:
-    def judge(_messages: list[dict[str, str]]) -> str:
+    def judge(_messages: list[dict[str, str]], _seed: int) -> str:
         return reply
 
     return judge
@@ -179,7 +179,7 @@ class TestPairwisePositionBias:
     def test_both_orderings_are_actually_sent(self) -> None:
         seen: list[str] = []
 
-        def judge(messages: list[dict[str, str]]) -> str:
+        def judge(messages: list[dict[str, str]], _seed: int) -> str:
             seen.append(messages[1]["content"])
             return "VERDICT: TIE"
 
@@ -260,3 +260,42 @@ class TestRubricIsFrozen:
             build_pairwise_prompt("Q?", "r", "a", "b"),
         ):
             assert "length" in prompt.user
+
+
+class TestSeedsReachTheJudge:
+    """The bug this class exists to prevent.
+
+    An earlier version looped over the seeds and discarded them, calling the
+    judge with identical arguments each time. Against a deterministic backend
+    that reports a judge SD of exactly zero — a confident claim of perfect
+    self-consistency, measured by never varying anything.
+    """
+
+    def test_each_seed_is_passed_through(self) -> None:
+        seen: list[int] = []
+
+        def judge(_messages: list[dict[str, str]], seed: int) -> str:
+            seen.append(seed)
+            return "SCORE: 2"
+
+        score_pointwise("q", "Q?", "ref", "cand", judge, seeds=(11, 22, 33))
+        assert seen == [11, 22, 33]
+
+    def test_a_seed_sensitive_judge_produces_nonzero_variance(self) -> None:
+        def judge(_messages: list[dict[str, str]], seed: int) -> str:
+            return f"SCORE: {seed % 3}"
+
+        result = score_pointwise("q", "Q?", "ref", "cand", judge, seeds=(0, 1, 2))
+        assert result.scores == (0, 1, 2)
+        assert result.sd > 0
+
+    def test_pairwise_uses_one_seed_for_both_orderings(self) -> None:
+        """Otherwise position bias is confounded with sampling noise."""
+        seen: list[int] = []
+
+        def judge(_messages: list[dict[str, str]], seed: int) -> str:
+            seen.append(seed)
+            return "VERDICT: TIE"
+
+        compare_pairwise("q", "Q?", "r", "a", "A", "b", "B", judge, seed=7)
+        assert seen == [7, 7]
