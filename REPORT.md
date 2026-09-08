@@ -413,6 +413,59 @@ fine-tuned arm, and it is reported here rather than omitted.
 
 ---
 
+## 7.5 Ablations
+
+Every result in this section comes from `results/ablations/`, produced by the
+grid in `scripts/11_run_matrix.py`. The grid is declared as data with
+dependencies and per-job cost estimates, so what it cost is reported rather
+than remembered.
+
+### Serving quantisation: 4-bit is not free, and its price depends on the arm
+
+The main benchmark serves every arm in bf16, deliberately — measuring one arm
+quantised and another not would break the comparison. So quantisation is an
+ablation with its own control: the same weights, served in 4-bit NF4.
+
+| Arm | Precision | Accuracy | Delta | p | p50 | p95 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `base` | bf16 | 56.8% | — | — | 103.4 ms | 117.9 ms |
+| `base` | NF4 | 56.1% | -0.7 | 0.562 | **95.5 ms** | 118.7 ms |
+| `rag-parity` | bf16 | 67.0% | — | — | 170.7 ms | 192.9 ms |
+| `rag-parity` | NF4 | 64.5% | **-2.5** | **0.006** | **226.5 ms** | 245.7 ms |
+
+All four runs were timed on an exclusive GPU with the same warmup discipline
+(3 discarded, 57 timed).
+
+**Both effects invert with prompt length, and neither is visible if you only
+test the short-prompt arm.**
+
+On 113-token prompts, NF4 is *faster* than bf16 (95.5 vs 103.4 ms) and its
+accuracy cost is not significant. That is the result a quick quantisation
+benchmark would report, and it reads as "4-bit is free, and it saves you three
+quarters of your VRAM."
+
+On 656-token prompts the same quantisation is **33% slower** than bf16 (226.5
+vs 170.7 ms) and costs a *significant* 2.5 points. Two mechanisms, pulling the
+same way:
+
+- **Latency.** NF4's win is memory bandwidth on weight loading, which dominates
+  when there is little to process. Its cost is dequantisation work that scales
+  with tokens processed. A long prefill flips the balance.
+- **Quality.** Quantisation degrades the model's use of supplied context more
+  than its parametric recall — losing 2.5 points when there is a passage to
+  read, and 0.7 when there is not.
+
+**So a quantisation decision measured without retrieval does not transfer to a
+RAG deployment.** Both the speed win and the quality cost move against you at
+exactly the prompt lengths RAG produces. This is the same trap as measuring an
+unmerged adapter (§4): a number taken under the wrong serving conditions points
+the wrong way.
+
+### Corpus size
+
+Reported in §2.2, where it changes the interpretation of a headline finding
+rather than sitting here as a footnote.
+
 ## 8. A decision framework
 
 Generalising past this dataset, in the order the questions actually arise:

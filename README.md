@@ -123,6 +123,19 @@ Asserted in tests, not promised in prose:
   item's explanation cannot enter an index under a different id.
 - **Pinned model revisions**; **fixed batch size** (it perturbs bf16 numerics).
 
+## Ablations
+
+The full grid (rank, epochs, top-k, embedder, quantisation, seeds, cross-base)
+runs from `make matrix`; results land in `results/ablations/` and are written up
+in [REPORT.md](REPORT.md#75-ablations). One worth surfacing here:
+
+**4-bit serving is free on short prompts and expensive on long ones.** NF4 costs
+`base` 0.7 points (p=0.56) and is *faster* — 95 ms vs 103 ms. The same
+quantisation costs the RAG arm **2.5 points (p=0.006) and is 33% slower** (227 ms
+vs 171 ms). Both the speed win and the quality cost invert with prompt length, so
+a quantisation decision benchmarked without retrieval does not transfer to a RAG
+deployment.
+
 ## Honest limitations
 
 - **Single seed.** All results are seed 42. Headline comparisons are paired
