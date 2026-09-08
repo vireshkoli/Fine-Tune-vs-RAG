@@ -18,7 +18,10 @@ embedder:
   # is silently truncated out of the index.
   max_seq_length: 512
   batch_size: 256
-  device: 1
+  # GPU 0, the same card everything else uses. This box is shared and the
+  # project is only ever granted one GPU at a time, so an embedder quietly
+  # reaching for a second card would land on someone else's job.
+  device: 0
   # float32 (the SentenceTransformer default) runs 4.3x slower on an A40:
   # 248 vs 1,054 chunks/s. Checked equivalent for retrieval before switching —
   # cosine >= 0.9995 vs fp32, top-1 agreement 1.000, top-5 overlap 0.998.

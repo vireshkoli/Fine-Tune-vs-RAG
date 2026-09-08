@@ -14,6 +14,11 @@ seed: 42
 # never happen is a latency measurement taken while anything else is resident,
 # which `assert_device_exclusive` now checks rather than assumes.
 inference_device: 0
+# Nominally a second card for a judge that never overlaps a timed run. In
+# practice this project is granted one GPU at a time on shared hardware, so
+# every stage — training, embedding, evaluation — is pinned to
+# `inference_device` and this stays unused. Kept because the free-text judge
+# arm still assumes it.
 judge_device: 1
 
 # The project needs ~74 GiB (37 judge + 15 base + indices + checkpoints).

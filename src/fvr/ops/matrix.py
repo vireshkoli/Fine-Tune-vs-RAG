@@ -27,6 +27,25 @@ from pathlib import Path
 
 from fvr.config import Paths
 
+#: Groups run cheapest-first, not in narrative order.
+#:
+#: The GPU is granted a window at a time on shared hardware and can be reclaimed
+#: at any point. Ordering by cost means an interruption after two hours leaves
+#: four *finished* ablations rather than one half-trained adapter; the expensive
+#: training groups sit at the end, where they lose least — and they resume from
+#: their own checkpoints anyway. `epochs` is last because it is 43% of the grid
+#: and answers the narrowest question.
+GROUP_ORDER: tuple[str, ...] = (
+    "corpus-size",
+    "quantization",
+    "topk",
+    "embedder",
+    "cross-base",
+    "seeds",
+    "rank",
+    "epochs",
+)
+
 #: Measured: 5.06 GPU-hours for 1,875 steps at r=16, 30k samples, one epoch,
 #: on an exclusive A40. Every training estimate below scales from this.
 BASE_TRAIN_GPU_HOURS = 5.06
@@ -395,6 +414,9 @@ def build_matrix(paths: Paths | None = None) -> list[Job]:
             )
         )
 
+    # Stable sort, so dependency order within a group is preserved. Every
+    # dependency in this matrix is intra-group, which `validate` re-checks.
+    jobs.sort(key=lambda job: GROUP_ORDER.index(job.group))
     validate(jobs)
     return jobs
 
@@ -404,8 +426,14 @@ class DependencyError(Exception):
 
 
 def validate(jobs: Sequence[Job]) -> None:
-    """Every dependency must exist, and must come earlier in the list."""
+    """Every dependency must exist, come earlier, and live in the same group.
+
+    The same-group rule is what makes reordering by cost safe: if a dependency
+    ever crossed a group boundary, sorting groups could place it after the job
+    that needs it, and the runner would evaluate an adapter that does not exist.
+    """
     seen: set[str] = set()
+    group_of = {job.name: job.group for job in jobs}
     names = [job.name for job in jobs]
     if len(names) != len(set(names)):
         duplicates = sorted({n for n in names if names.count(n) > 1})
@@ -415,6 +443,12 @@ def validate(jobs: Sequence[Job]) -> None:
             if dependency not in seen:
                 raise DependencyError(
                     f"{job.name} depends on {dependency!r}, which is not defined before it"
+                )
+            if group_of.get(dependency) != job.group:
+                raise DependencyError(
+                    f"{job.name} ({job.group}) depends on {dependency!r} "
+                    f"({group_of.get(dependency)}); cross-group dependencies break "
+                    "cost-ordered execution"
                 )
         seen.add(job.name)
 
