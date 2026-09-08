@@ -18,6 +18,7 @@ import pytest
 from fvr.eval.judge import (
     Agreement,
     ArmJudgement,
+    JudgeFn,
     PairwiseResult,
     UnparseableVerdictError,
     cohens_kappa,
@@ -34,7 +35,7 @@ from fvr.prompts.judge import (
 )
 
 
-def scripted(replies: list[str]):
+def scripted(replies: list[str]) -> JudgeFn:
     """A judge that returns each reply in turn."""
     stream: Iterator[str] = iter(replies)
 
@@ -44,7 +45,7 @@ def scripted(replies: list[str]):
     return judge
 
 
-def always(reply: str):
+def always(reply: str) -> JudgeFn:
     def judge(_messages: list[dict[str, str]]) -> str:
         return reply
 

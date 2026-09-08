@@ -27,6 +27,15 @@ class ScoredItem:
     prompt_tokens: int
 
 
+@dataclass(frozen=True)
+class GeneratedItem:
+    """One free-text answer plus the token accounting needed to cost it."""
+
+    text: str
+    prompt_tokens: int
+    completion_tokens: int
+
+
 class InferenceEngine:
     """Wraps a loaded model with the project's fixed decoding policy."""
 
@@ -93,3 +102,65 @@ class InferenceEngine:
     def score_one(self, prompt: BuiltPrompt) -> ScoredItem:
         """Single-item scoring. Used for latency, where batching would cheat."""
         return self.score_batch([prompt])[0]
+
+    def generate_batch(
+        self, prompts: Sequence[BuiltPrompt], *, max_new_tokens: int = 96
+    ) -> list[GeneratedItem]:
+        """Generate free-text answers for a batch.
+
+        Greedy, like every other decode in this project: sampling would add
+        variance that is not the variance being studied, and would make the
+        judge's seed-to-seed spread impossible to separate from the model's.
+
+        ``max_new_tokens`` is a hard bound rather than a suggestion. The prompt
+        asks for one or two sentences, but an arm that ignored that and rambled
+        would inflate its own latency and cost while handing the judge more
+        surface area to reward — so the cap is enforced here, identically for
+        every arm, rather than trusted to the instruction.
+        """
+        import torch
+
+        if not prompts:
+            return []
+
+        texts = [self.render(p) for p in prompts]
+        encoded = self.tokenizer(
+            texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=self.loaded.config.max_seq_length,
+        ).to(self.model.device)
+
+        with torch.inference_mode():
+            output = self.model.generate(
+                **encoded,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                temperature=None,
+                top_p=None,
+                top_k=None,
+                pad_token_id=self.tokenizer.pad_token_id,
+            )
+
+        attention = encoded["attention_mask"]
+        prompt_length = encoded["input_ids"].shape[1]
+        results: list[GeneratedItem] = []
+        for i in range(len(prompts)):
+            # Left padding means every sequence's completion starts at the same
+            # offset, so the prompt can be sliced off by width rather than by
+            # searching for it in the decoded string.
+            completion = output[i, prompt_length:]
+            text = str(self.tokenizer.decode(completion, skip_special_tokens=True))
+            results.append(
+                GeneratedItem(
+                    text=text.strip(),
+                    prompt_tokens=int(attention[i].sum()),
+                    completion_tokens=int((completion != self.tokenizer.pad_token_id).sum()),
+                )
+            )
+        return results
+
+    def generate_one(self, prompt: BuiltPrompt, *, max_new_tokens: int = 96) -> GeneratedItem:
+        """Single-item generation. Used for latency, where batching would cheat."""
+        return self.generate_batch([prompt], max_new_tokens=max_new_tokens)[0]

@@ -11,7 +11,10 @@ from fvr.data.schema import Passage, Question
 from fvr.inference.arms import ARMS, get_arm, headline_arms
 from fvr.prompts.templates import (
     ANSWER_INSTRUCTION,
+    FREETEXT_INSTRUCTION,
+    FREETEXT_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
+    build_freetext_prompt,
     build_prompt,
     format_options,
     strip_context,
@@ -131,3 +134,59 @@ class TestArms:
             assert "nope" in str(exc)
         else:  # pragma: no cover
             raise AssertionError("expected KeyError")
+
+
+class TestFreeTextParity:
+    """The free-text arms get the same fairness control as the MCQ arms.
+
+    They share one context-insertion helper, so these assertions are about a
+    property that holds by construction — but the point of asserting it is that
+    a future edit could give free text its own insertion path and quietly break
+    the comparison between free-text RAG and free-text non-RAG.
+    """
+
+    def test_stripping_context_reproduces_the_plain_freetext_prompt(self) -> None:
+        plain = build_freetext_prompt(a_question())
+        with_context = build_freetext_prompt(a_question(), some_passages())
+        assert strip_context(with_context).user == plain.user
+        assert strip_context(with_context).system == plain.system
+
+    def test_system_prompt_is_identical_across_freetext_arms(self) -> None:
+        assert (
+            build_freetext_prompt(a_question()).system
+            == build_freetext_prompt(a_question(), some_passages()).system
+            == FREETEXT_SYSTEM_PROMPT
+        )
+
+    def test_context_block_is_byte_identical_to_the_mcq_one(self) -> None:
+        """Same passages must produce the same context block in both modes.
+
+        Otherwise the free-text RAG arm would receive different evidence from
+        the MCQ RAG arm and the two could not be compared.
+        """
+        passages = some_passages(3)
+        mcq_context = build_prompt(a_question(), passages).user
+        free_context = build_freetext_prompt(a_question(), passages).user
+        marker = "\n\n---\n\n"
+        assert mcq_context.split(marker)[0] == free_context.split(marker)[0]
+
+    def test_options_are_never_shown(self) -> None:
+        """The whole point of the arm: generate the answer, do not rank four."""
+        question = a_question()
+        prompt = build_freetext_prompt(question, some_passages())
+        for option in question.options[1:]:
+            assert option not in prompt.user
+        assert format_options(question) not in prompt.user
+
+    def test_it_does_not_ask_for_a_letter(self) -> None:
+        prompt = build_freetext_prompt(a_question())
+        assert ANSWER_INSTRUCTION not in prompt.user
+        assert FREETEXT_INSTRUCTION in prompt.user
+        assert "A, B, C" not in prompt.system
+
+    def test_the_question_body_is_unchanged_by_context(self) -> None:
+        bodies = {
+            strip_context(build_freetext_prompt(a_question(), some_passages(n))).user
+            for n in (0, 1, 5)
+        }
+        assert len(bodies) == 1
