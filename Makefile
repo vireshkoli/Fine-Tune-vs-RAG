@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc space-data push-dry push matrix matrix-run judge-server
+.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc space-data push-dry push matrix matrix-run judge-server freetext judge kappa
 
 PY := uv run
 
@@ -110,6 +110,15 @@ judge-server:  ## Print the command to serve the LLM judge (run it in its own ve
 	@echo "not installed here: vllm pins torch, this project pins torch 2.11.0+cu128"
 	@echo "for a CUDA 12.8 driver that is not ours to update, and a sync that rewrote"
 	@echo "torch would break an in-flight experiment grid."
+
+freetext:  ## Generate free-text answers for one arm (ARM=base)
+	$(PY) python scripts/12_freetext_eval.py --arm $(ARM) $(if $(ADAPTER),--adapter $(ADAPTER),)
+
+judge:  ## Score generated free-text answers with the LLM judge (needs the server)
+	$(PY) python scripts/13_judge_freetext.py --all
+
+kappa:  ## Score your filled-in labelling sheet against the judge (ARM=base)
+	$(PY) python scripts/13_judge_freetext.py --kappa --kappa-arm $(ARM)
 
 docker-build:  ## Build both images (train needs CUDA; serve runs on CPU)
 	docker build -f docker/train.Dockerfile -t fine-tune-vs-rag:train .

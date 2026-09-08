@@ -1,0 +1,13 @@
+{
+  "output_dir": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/qlora-r16-llama",
+  "train_gpu_seconds": 16462.631667849608,
+  "final_step": 1875,
+  "train_loss": 1.1497973676045736,
+  "best_eval_loss": 1.0982693433761597,
+  "resumed_from": null,
+  "n_train": 30000,
+  "n_eval": 500,
+  "trainable_params": 41943040,
+  "total_params": 4582543360,
+  "trainable_pct": 0.9152786281546499
+}
