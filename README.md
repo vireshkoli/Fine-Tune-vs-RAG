@@ -137,8 +137,11 @@ Asserted in tests, not promised in prose:
 - **31.3% of MedMCQA's labelled pool is dentistry**, the subject where retrieval
   helps least. Excluding it, `rag-parity` reaches 74.2% and `base` 59.8% — the
   headline *understates* the effect on genuinely medical subjects.
-- **The two indices differ 7.3× in size**, so the parity-vs-external contrast
-  conflates corpus content with corpus size.
+- ~~The two indices differ 7.3× in size.~~ **Measured and resolved**: rebuilding
+  the external index at exactly the parity chunk count *widened* the gap from
+  +10.3 to +16.4 points, so the effect is corpus content, not size. That run
+  also showed a thin wrong corpus scoring **6.2 points below no retrieval at
+  all** (p<0.0001) — bad RAG is a regression, not a wash.
 - **No free-text evaluation**; all results are 4-option MCQ.
 
 Full methodology, per-subject breakdowns, error taxonomy and the decision
