@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc space-data push-dry push matrix matrix-run
+.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc space-data push-dry push matrix matrix-run judge-server
 
 PY := uv run
 
@@ -101,6 +101,15 @@ matrix:  ## Show the full experiment grid and its GPU-hour budget (runs nothing)
 
 matrix-run:  ## Run the pending grid; waits for an exclusive GPU (GROUP=rank for one group)
 	$(PY) python scripts/11_run_matrix.py --execute --wait-for-gpu $(if $(GROUP),--only $(GROUP),)
+
+judge-server:  ## Print the command to serve the LLM judge (run it in its own venv)
+	@$(PY) python -c "from fvr.eval.judge_client import load_judge_config, server_command; \
+		print(server_command(load_judge_config('configs/eval/judge.yaml')))"
+	@echo
+	@echo "Run that in a SEPARATE virtualenv with vllm installed. It is deliberately"
+	@echo "not installed here: vllm pins torch, this project pins torch 2.11.0+cu128"
+	@echo "for a CUDA 12.8 driver that is not ours to update, and a sync that rewrote"
+	@echo "torch would break an in-flight experiment grid."
 
 docker-build:  ## Build both images (train needs CUDA; serve runs on CPU)
 	docker build -f docker/train.Dockerfile -t fine-tune-vs-rag:train .

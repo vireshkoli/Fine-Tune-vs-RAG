@@ -40,9 +40,14 @@ from fvr.prompts.judge import (
     build_pointwise_prompt,
 )
 
-#: A callable that takes rendered messages and returns the judge's reply text.
+#: A callable taking rendered messages *and a seed*, returning the reply text.
 #: Injected so this module never imports vLLM and stays CPU-testable.
-JudgeFn = Callable[[list[dict[str, str]]], str]
+#:
+#: The seed is part of the signature rather than the judge's internal state
+#: because seed-to-seed spread is a reported number. A judge called three times
+#: with no seed would either return the same answer three times — reporting a
+#: variance of zero that means nothing — or vary uncontrollably, which is worse.
+JudgeFn = Callable[[list[dict[str, str]], int], str]
 
 Verdict = Literal["A", "B", "TIE"]
 
@@ -123,9 +128,9 @@ def score_pointwise(
     prompt = build_pointwise_prompt(question, reference, candidate)
     scores: list[int] = []
     unparseable = 0
-    for _ in seeds:
+    for seed in seeds:
         try:
-            scores.append(parse_score(judge(prompt.as_messages())))
+            scores.append(parse_score(judge(prompt.as_messages(), seed)))
         except UnparseableVerdictError:
             unparseable += 1
     return PointwiseResult(item_id=item_id, scores=tuple(scores), unparseable=unparseable)
@@ -171,13 +176,18 @@ def compare_pairwise(
     arm_b: str,
     answer_b: str,
     judge: JudgeFn,
+    *,
+    seed: int = 0,
 ) -> PairwiseResult:
     """Compare two answers in both orders."""
+    # Both orderings use the *same* seed. Varying it as well would confound
+    # position bias with sampling noise, and position bias is the thing being
+    # measured here.
     forward = parse_verdict(
-        judge(build_pairwise_prompt(question, reference, answer_a, answer_b).as_messages())
+        judge(build_pairwise_prompt(question, reference, answer_a, answer_b).as_messages(), seed)
     )
     backward_raw = parse_verdict(
-        judge(build_pairwise_prompt(question, reference, answer_b, answer_a).as_messages())
+        judge(build_pairwise_prompt(question, reference, answer_b, answer_a).as_messages(), seed)
     )
     backward = _flip(backward_raw)
     return PairwiseResult(
