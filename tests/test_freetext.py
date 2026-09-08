@@ -1,0 +1,134 @@
+"""The free-text arm.
+
+The arm exists because constrained A/B/C/D scoring measures whether a model can
+*rank four candidates*, which is easier and narrower than producing the answer
+unaided. These tests guard the two things that would make the free-text and MCQ
+results incomparable: a different item set, and a different reference.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from fvr.data.schema import Question
+from fvr.eval.freetext import (
+    FreeTextAnswer,
+    FreeTextRun,
+    UnlabelledQuestionError,
+    reference_answer,
+    select_freetext_items,
+)
+
+
+def questions(n: int = 500, unlabelled: int = 0) -> list[Question]:
+    items = [
+        Question(
+            id=f"q{i:04d}",
+            question=f"Question {i}?",
+            options=["alpha", "beta", "gamma", "delta"],
+            answer_idx=i % 4,
+            subject="Anatomy",
+        )
+        for i in range(n)
+    ]
+    for i in range(unlabelled):
+        items[i] = items[i].model_copy(update={"answer_idx": None})
+    return items
+
+
+class TestReference:
+    def test_is_the_gold_option_text(self) -> None:
+        question = questions(1)[0]
+        assert reference_answer(question) == question.options[question.answer_idx or 0]
+
+    def test_refuses_an_unlabelled_question(self) -> None:
+        """A reference of "None" would be silently graded against by the judge."""
+        with pytest.raises(UnlabelledQuestionError):
+            reference_answer(questions(1, unlabelled=1)[0])
+
+
+class TestSelection:
+    def test_is_deterministic_for_a_seed(self) -> None:
+        first = [q.id for q in select_freetext_items(questions(), n=50, seed=7)]
+        second = [q.id for q in select_freetext_items(questions(), n=50, seed=7)]
+        assert first == second
+
+    def test_does_not_depend_on_input_order(self) -> None:
+        """Every arm must be given the same items or the comparison is unpaired.
+
+        If selection depended on load order, two arms could silently be judged
+        on different questions.
+        """
+        forward = questions()
+        backward = list(reversed(forward))
+        assert [q.id for q in select_freetext_items(forward, n=50)] == [
+            q.id for q in select_freetext_items(backward, n=50)
+        ]
+
+    def test_different_seeds_select_differently(self) -> None:
+        a = {q.id for q in select_freetext_items(questions(), n=50, seed=1)}
+        b = {q.id for q in select_freetext_items(questions(), n=50, seed=2)}
+        assert a != b
+
+    def test_skips_unlabelled_questions(self) -> None:
+        chosen = select_freetext_items(questions(unlabelled=100), n=50)
+        assert all(q.answer_idx is not None for q in chosen)
+
+    def test_refuses_to_silently_return_fewer(self) -> None:
+        with pytest.raises(ValueError, match="only"):
+            select_freetext_items(questions(n=10), n=50)
+
+    def test_returns_exactly_n(self) -> None:
+        assert len(select_freetext_items(questions(), n=300)) == 300
+
+
+def an_answer(text: str = "Coronary artery.", **overrides: object) -> FreeTextAnswer:
+    defaults = {
+        "question_id": "q1",
+        "subject": "Anatomy",
+        "question": "Which vessel?",
+        "reference": "Coronary artery",
+        "answer": text,
+        "prompt_tokens": 100,
+        "completion_tokens": 8,
+    }
+    return FreeTextAnswer(**{**defaults, **overrides})  # type: ignore[arg-type]
+
+
+class TestRun:
+    def a_run(self, answers: list[FreeTextAnswer]) -> FreeTextRun:
+        return FreeTextRun(
+            arm="base",
+            seed=42,
+            split_sha256="abc",
+            model={"repo_id": "x"},
+            environment={"git_sha": "y"},
+            answers=answers,
+        )
+
+    def test_counts_empty_answers_rather_than_dropping_them(self) -> None:
+        """An arm that refuses is failing, not absent.
+
+        Excluding blanks would score the arm on the subset where it spoke.
+        """
+        run = self.a_run([an_answer(), an_answer(""), an_answer("   ")])
+        assert run.empty_answers == 2
+        assert run.to_json()["n_items"] == 3
+
+    def test_reports_mean_completion_length(self) -> None:
+        run = self.a_run([an_answer(completion_tokens=10), an_answer(completion_tokens=20)])
+        assert run.mean_completion_tokens == 15
+
+    def test_round_trips_through_json(self, tmp_path: Path) -> None:
+        run = self.a_run([an_answer()])
+        path = tmp_path / "nested" / "base_seed42.json"
+        run.write(path)
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+        assert loaded["arm"] == "base"
+        assert loaded["answers"][0]["reference"] == "Coronary artery"
+
+    def test_empty_run_does_not_divide_by_zero(self) -> None:
+        assert self.a_run([]).mean_completion_tokens == 0.0
