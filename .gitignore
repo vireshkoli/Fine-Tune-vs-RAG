@@ -53,3 +53,8 @@ results/**/.cache/
 
 # Run logs — transient, and they can contain absolute paths.
 logs/
+
+# Operational telemetry from scripts/11_run_matrix.py, rewritten after every job.
+# The authoritative record is the run JSONs it produces plus results/training/*,
+# which carry the GPU-seconds the cost model actually uses.
+results/matrix_status.json
