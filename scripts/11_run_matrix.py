@@ -98,6 +98,55 @@ def wait_for_gpu(device: int) -> None:
         time.sleep(POLL_SECONDS)
 
 
+class JobLock:
+    """A per-job lock so several runners can share one queue.
+
+    Two runners on two GPUs would otherwise both start the first pending job
+    and write into the same checkpoint directory — resumption would then pick
+    up whichever checkpoint was written last, and the adapter would be a
+    silent mix of two runs. The lock is a file holding the owner's pid; a lock
+    whose pid is dead is stale and is taken over, so a crashed runner never
+    wedges the queue.
+    """
+
+    def __init__(self, job: Job, lock_dir: Path, device: int) -> None:
+        self.job = job
+        self.path = lock_dir / f"{job.name}.lock"
+        self.device = device
+
+    @staticmethod
+    def _alive(pid: int) -> bool:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
+        return True
+
+    def holder(self) -> int | None:
+        """Pid of a live owner, or None if free / stale."""
+        try:
+            pid = int(self.path.read_text(encoding="utf-8").split()[0])
+        except (OSError, ValueError, IndexError):
+            return None
+        return pid if self._alive(pid) else None
+
+    def acquire(self) -> bool:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if self.holder() is not None:
+            return False
+        self.path.write_text(f"{os.getpid()} gpu{self.device}\n", encoding="utf-8")
+        return True
+
+    def release(self) -> None:
+        try:
+            if self.holder() == os.getpid():
+                self.path.unlink()
+        except OSError:
+            pass
+
+
 def job_kind(job: Job) -> str:
     script = job.command[1]
     if "04_train" in script:
@@ -164,6 +213,13 @@ def main() -> int:
         help="cap each training process's GPU memory (passed as $FVR_MEMORY_CAP_GIB)",
     )
     parser.add_argument(
+        "--device",
+        type=int,
+        default=None,
+        help="GPU index for this runner (default: configs/base.yaml inference_device). "
+        "Two runners on two devices share the queue safely via per-job locks",
+    )
+    parser.add_argument(
         "--stop-on-failure",
         action="store_true",
         help="abort the grid on the first failure rather than continuing",
@@ -197,7 +253,7 @@ def main() -> int:
 
     from fvr.eval.device import device_occupancy
 
-    device = project.inference_device
+    device = args.device if args.device is not None else project.inference_device
     occupancy = device_occupancy(device)
     if not occupancy.is_exclusive and args.allow_shared:
         if any(job_kind(job) == "eval" for job in todo):
@@ -228,6 +284,7 @@ def main() -> int:
     state = MatrixState()
     failed: set[str] = set()
     log_dir = paths.artifacts / "logs"
+    lock_dir = paths.artifacts / "locks"
 
     for job in todo:
         blocked = sorted(set(job.depends_on) & failed)
@@ -237,12 +294,24 @@ def main() -> int:
             failed.add(job.name)
             continue
 
-        env = (
-            {"FVR_MEMORY_CAP_GIB": str(args.memory_cap_gib)}
-            if args.memory_cap_gib is not None and job_kind(job) == "train"
-            else None
-        )
-        result = run_job(job, log_dir, env=env)
+        # Re-checked at run time, not just at plan time: another runner may
+        # have finished this job since the plan was computed.
+        if job.is_done():
+            console.print(f"[dim]{job.name}: done by another runner, skipping[/]")
+            continue
+
+        lock = JobLock(job, lock_dir, device)
+        if not lock.acquire():
+            console.print(f"[dim]{job.name}: held by pid {lock.holder()}, skipping[/]")
+            continue
+
+        env: dict[str, str] = {"CUDA_VISIBLE_DEVICES": str(device)}
+        if args.memory_cap_gib is not None and job_kind(job) == "train":
+            env["FVR_MEMORY_CAP_GIB"] = str(args.memory_cap_gib)
+        try:
+            result = run_job(job, log_dir, env=env)
+        finally:
+            lock.release()
         state.results.append(result)
         if result.status == "failed":
             failed.add(job.name)

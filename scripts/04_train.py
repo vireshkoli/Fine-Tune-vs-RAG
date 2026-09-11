@@ -103,7 +103,11 @@ def main() -> int:
             update={"seed": args.seed, "name": f"{train_config.name}-seed{args.seed}"}
         )
     model_config = load_model_config(train_config.model_config_path)
-    physical_device = model_config.device
+    # The physical card is whatever CUDA_VISIBLE_DEVICES pinned, which a
+    # multi-GPU runner sets per job; the config's `device` is only the default.
+    # Getting this wrong records GPU 0's occupancy on a GPU 1 run.
+    visible = _os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    physical_device = int(visible) if visible.isdigit() else model_config.device
     # Renumbered: with CUDA_VISIBLE_DEVICES set, the target GPU is index 0.
     model_config = model_config.model_copy(update={"device": 0})
     set_all_seeds(train_config.seed)
