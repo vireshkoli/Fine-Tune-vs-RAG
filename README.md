@@ -129,6 +129,16 @@ The full grid (rank, epochs, top-k, embedder, quantisation, seeds, cross-base)
 runs from `make matrix`; results land in `results/ablations/` and are written up
 in [REPORT.md](REPORT.md#75-ablations). One worth surfacing here:
 
+**The finding replicates on Llama-3.1-8B.** Same recipe, no retuning: the
+index beats the weights by +4.4 points on Llama (p=0.019) versus +4.1 on Qwen
+(p=0.016), and every other paired comparison keeps its sign and significance.
+The conclusion is about fine-tuning versus retrieval, not about Qwen3.
+
+**Retrieval depth is not the lever.** On the parity corpus, k saturates at 5
+under the shared context budget (k=10: +0.5, p=0.58). On the external corpus
+k does nothing at any value. A domain-specific embedder (MedEmbed) did not
+help either: lower hit rate on both corpora, accuracy within noise.
+
 **4-bit serving is free on short prompts and expensive on long ones.** NF4 costs
 `base` 0.7 points (p=0.56) and is *faster* — 95 ms vs 103 ms. The same
 quantisation costs the RAG arm **2.5 points (p=0.006) and is 33% slower** (227 ms
