@@ -79,6 +79,13 @@ def main() -> int:
         help="override the config seed; the run is renamed so seeds never collide",
     )
     parser.add_argument(
+        "--memory-cap-gib",
+        type=float,
+        default=_os.environ.get("FVR_MEMORY_CAP_GIB"),
+        help="bound this process's GPU memory; for training on a GPU someone else "
+        "is also using (default: $FVR_MEMORY_CAP_GIB, else uncapped)",
+    )
+    parser.add_argument(
         "--estimate-only",
         action="store_true",
         help="time a few steps, project total GPU-hours, then stop",
@@ -108,6 +115,13 @@ def main() -> int:
             "[yellow]Training on a shared device. It will still be correct, but slower, "
             "and the recorded GPU-seconds will overstate the true training cost.[/]"
         )
+        if args.memory_cap_gib is None:
+            console.print(
+                "[yellow]No --memory-cap-gib set. If this process grows into the other "
+                "tenant's headroom it is *their* job that OOMs. Set a cap.[/]"
+            )
+    if args.memory_cap_gib is not None:
+        console.print(f"Memory cap: {float(args.memory_cap_gib):.0f} GiB for this process")
 
     split_ids = json.loads((paths.results / "split_ids.json").read_text(encoding="utf-8"))
     held_out_ids = set(split_ids["test"]) | set(split_ids["val"])
@@ -183,6 +197,8 @@ def main() -> int:
         output_dir,
         resume=not args.no_resume,
         max_steps=args.max_steps,
+        memory_cap_gib=float(args.memory_cap_gib) if args.memory_cap_gib is not None else None,
+        device_occupancy=occupancy.as_dict(),
     )
 
     summary = paths.results / "training" / f"{train_config.name}.json"
@@ -196,6 +212,10 @@ def main() -> int:
     console.print(f"  train loss {result.train_loss:.4f}" if result.train_loss else "")
     console.print(f"  best eval loss {result.best_eval_loss:.4f}" if result.best_eval_loss else "")
     console.print(f"  {result.train_gpu_seconds / 3600:.2f} GPU-hours")
+    if result.peak_memory_gib is not None:
+        console.print(f"  peak memory {result.peak_memory_gib:.1f} GiB")
+    if result.device_occupancy and not result.device_occupancy.get("exclusive"):
+        console.print("  [yellow]GPU was shared: GPU-hours above overstate the true cost[/]")
     console.print(f"  adapter -> [cyan]{result.output_dir / 'adapter'}[/]")
     console.print(f"  summary -> [cyan]{summary}[/]")
     return 0

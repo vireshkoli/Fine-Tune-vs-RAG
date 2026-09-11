@@ -20,6 +20,7 @@ from fvr.config import bootstrap_env, load_config  # isort: skip
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -97,7 +98,16 @@ def wait_for_gpu(device: int) -> None:
         time.sleep(POLL_SECONDS)
 
 
-def run_job(job: Job, log_dir: Path) -> JobResult:
+def job_kind(job: Job) -> str:
+    script = job.command[1]
+    if "04_train" in script:
+        return "train"
+    if "02_build_index" in script:
+        return "index"
+    return "eval"
+
+
+def run_job(job: Job, log_dir: Path, *, env: dict[str, str] | None = None) -> JobResult:
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / f"{job.name}.log"
     console.print(f"[bold cyan]{job.name}[/] ({job.gpu_hours:.1f} GPU-h est.)")
@@ -110,6 +120,7 @@ def run_job(job: Job, log_dir: Path) -> JobResult:
             stdout=handle,
             stderr=subprocess.STDOUT,
             check=False,
+            env={**os.environ, **(env or {})},
         )
     elapsed = time.perf_counter() - started
 
@@ -134,6 +145,25 @@ def main() -> int:
         help="poll until the inference GPU is exclusive instead of refusing",
     )
     parser.add_argument(
+        "--kind",
+        choices=["all", "train", "index", "eval"],
+        default="all",
+        help="run only jobs of one kind. `train` is what makes sense on a shared "
+        "GPU: training is correct under contention, latency measurement is not",
+    )
+    parser.add_argument(
+        "--allow-shared",
+        action="store_true",
+        help="proceed on a GPU with other tenants. Refused for eval jobs regardless: "
+        "their latency figures would not be comparable",
+    )
+    parser.add_argument(
+        "--memory-cap-gib",
+        type=float,
+        default=None,
+        help="cap each training process's GPU memory (passed as $FVR_MEMORY_CAP_GIB)",
+    )
+    parser.add_argument(
         "--stop-on-failure",
         action="store_true",
         help="abort the grid on the first failure rather than continuing",
@@ -151,6 +181,9 @@ def main() -> int:
             return 1
         all_jobs = [job for job in all_jobs if job.group == args.only]
 
+    if args.kind != "all":
+        all_jobs = [job for job in all_jobs if job_kind(job) == args.kind]
+
     todo = pending(all_jobs)
     show_plan(todo, all_jobs=all_jobs)
 
@@ -166,7 +199,22 @@ def main() -> int:
 
     device = project.inference_device
     occupancy = device_occupancy(device)
-    if not occupancy.is_exclusive:
+    if not occupancy.is_exclusive and args.allow_shared:
+        if any(job_kind(job) == "eval" for job in todo):
+            console.print(
+                "[red]--allow-shared with eval jobs pending. Latency measured on a shared "
+                "GPU is not comparable with the exclusive runs; use --kind train.[/]"
+            )
+            return 1
+        console.print(
+            f"[yellow]GPU {device} is shared ({occupancy.foreign_mib:,} MiB held by "
+            f"{len(occupancy.foreign_pids)} other process(es)). Proceeding with training "
+            "only; recorded GPU-seconds will be flagged as taken under contention.[/]"
+        )
+        if args.memory_cap_gib is None:
+            console.print("[red]Refusing to share a GPU without --memory-cap-gib.[/]")
+            return 1
+    elif not occupancy.is_exclusive:
         if not args.wait_for_gpu:
             console.print(
                 f"\n[red]GPU {device} is not exclusive "
@@ -189,7 +237,12 @@ def main() -> int:
             failed.add(job.name)
             continue
 
-        result = run_job(job, log_dir)
+        env = (
+            {"FVR_MEMORY_CAP_GIB": str(args.memory_cap_gib)}
+            if args.memory_cap_gib is not None and job_kind(job) == "train"
+            else None
+        )
+        result = run_job(job, log_dir, env=env)
         state.results.append(result)
         if result.status == "failed":
             failed.add(job.name)

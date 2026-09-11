@@ -38,6 +38,14 @@ class TrainResult:
     n_eval: int
     trainable_params: int
     total_params: int
+    #: Who else was on the GPU. On a shared card the wall-clock overstates the
+    #: true training cost, so the cost model must be able to see that this
+    #: number was taken under contention rather than trust it.
+    device_occupancy: dict[str, Any] | None = None
+    #: Cap applied to this process, if any, and the peak it actually reached.
+    #: The peak is recorded so the next run can be sized from a measurement.
+    memory_cap_gib: float | None = None
+    peak_memory_gib: float | None = None
 
     @property
     def trainable_pct(self) -> float:
@@ -59,6 +67,9 @@ class TrainResult:
                     "trainable_params": self.trainable_params,
                     "total_params": self.total_params,
                     "trainable_pct": self.trainable_pct,
+                    "device_occupancy": self.device_occupancy,
+                    "memory_cap_gib": self.memory_cap_gib,
+                    "peak_memory_gib": self.peak_memory_gib,
                 },
                 indent=2,
             )
@@ -105,17 +116,31 @@ def train(
     *,
     resume: bool = True,
     max_steps: int | None = None,
+    memory_cap_gib: float | None = None,
+    device_occupancy: dict[str, Any] | None = None,
 ) -> TrainResult:
     """Run QLoRA fine-tuning and return the artefacts plus timing.
 
     ``eval_dataset`` is the **validation** split. Checkpoint selection uses it
     and nothing else; the test split is never loaded here, which
     ``tests/test_train.py`` asserts directly.
+
+    ``memory_cap_gib`` bounds *this process's* allocations. It exists for
+    training on a GPU somebody else is also using: with a cap, the failure mode
+    if memory runs short is "our job OOMs and resumes from its checkpoint",
+    rather than "their job OOMs". The cap cannot protect us from *them* growing
+    into memory we already hold — nothing can — so it is set with headroom.
     """
     import torch
     from trl import SFTConfig, SFTTrainer  # type: ignore[attr-defined]
 
     from fvr.models.loader import load_base_model
+
+    if memory_cap_gib is not None and torch.cuda.is_available():
+        total_gib = torch.cuda.get_device_properties(0).total_memory / 2**30
+        fraction = min(1.0, memory_cap_gib / total_gib)
+        torch.cuda.set_per_process_memory_fraction(fraction, 0)
+        torch.cuda.reset_peak_memory_stats(0)
 
     output_dir = Path(output_dir)
     # str(None) is the string "None", which Trainer then treats as a real path
@@ -185,6 +210,7 @@ def train(
 
     eval_losses = [h["eval_loss"] for h in trainer.state.log_history if "eval_loss" in h]
 
+    peak_gib = torch.cuda.max_memory_allocated(0) / 2**30 if torch.cuda.is_available() else None
     return TrainResult(
         output_dir=output_dir,
         train_gpu_seconds=elapsed,
@@ -196,4 +222,7 @@ def train(
         n_eval=len(eval_dataset),
         trainable_params=trainable,
         total_params=total,
+        device_occupancy=device_occupancy,
+        memory_cap_gib=memory_cap_gib,
+        peak_memory_gib=peak_gib,
     )
