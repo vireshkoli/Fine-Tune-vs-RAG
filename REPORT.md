@@ -466,6 +466,89 @@ the wrong way.
 Reported in §2.2, where it changes the interpretation of a headline finding
 rather than sitting here as a footnote.
 
+### Cross-base: the finding is not a fact about Qwen3
+
+The identical QLoRA recipe — every hyperparameter held at the Qwen3-8B
+control's value, no retuning — was run on `Llama-3.1-8B-Instruct`, and the
+four parity arms re-evaluated. The parity index is reusable: it is keyed on the
+embedder, not the model being evaluated.
+
+| Arm | Qwen3-8B | Llama-3.1-8B |
+| --- | ---: | ---: |
+| `base` | 56.8% | 54.3% |
+| `qlora` | 62.9% | 58.2% |
+| `rag-parity` | 67.0% | 62.6% |
+| `qlora-rag-parity` | 71.1% | 67.5% |
+
+| Paired comparison | Qwen3-8B | Llama-3.1-8B |
+| --- | ---: | ---: |
+| `rag-parity` vs `base` | +10.2 (p=1e-9) | +8.3 (p=3e-6) |
+| `qlora` vs `base` | +6.1 (p=7e-6) | +3.9 (p=0.006) |
+| **`rag-parity` vs `qlora`** | **+4.1 (p=0.016)** | **+4.4 (p=0.019)** |
+| `qlora-rag-parity` vs `rag-parity` | +4.1 (p=0.001) | +4.9 (p=0.0005) |
+
+Every comparison has the same sign, a similar magnitude, and is significant on
+both bases. The headline — *on identical information, the index beats the
+weights* — comes out at +4.1 on Qwen and +4.4 on Llama. Llama is 2.5–4.7 points
+lower in absolute terms everywhere, which is a fact about Llama; the
+between-arm structure, which is what this study is about, is unchanged.
+
+The Llama adapter is deliberately not published. Llama 3.1's licence requires
+derivative models to be named `Llama-*`, and this one is measurement apparatus,
+not a release. (Training: 4.57 GPU-hours, best eval loss 1.098.)
+
+### Retrieval depth: k saturates at the budget, and only where the corpus works
+
+Under the shared 3,000-character context budget, raising k adds *candidates
+competing for the same budget* rather than more context, so this measures
+precision against coverage at roughly constant prefill cost.
+
+| Corpus | k | Accuracy | vs k=5 | Hit rate | Context chars | Passages |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| parity | 1 | 62.4% | -4.6 (p=0.0002) | 0.340 | 418 | 1.00 |
+| parity | 3 | 65.1% | -1.9 (p=0.04) | 0.501 | 1,277 | 3.00 |
+| parity | 5 | **67.0%** | control | 0.570 | 2,107 | 4.95 |
+| parity | 10 | 67.5% | +0.5 (p=0.58) | 0.610 | 2,740 | 6.67 |
+| external | 1 | 55.4% | -1.3 (p=0.35) | 0.196 | 516 | 1.00 |
+| external | 3 | 56.2% | -0.5 (p=0.67) | 0.370 | 1,540 | 3.00 |
+| external | 5 | 56.7% | control | 0.454 | 2,565 | 4.99 |
+| external | 10 | 56.0% | -0.7 (p=0.09) | 0.466 | 2,718 | 5.31 |
+
+Two things the sweep shows. On the parity corpus the gain is monotone and
+**saturates at k=5**: k=10 fits only 6.7 passages into the budget and adds
++0.5, within noise. So the control was at the knee, not an arbitrary point. On
+the external corpus **k does nothing at any value** — four settings, four
+nulls. Retrieval depth is not the lever; the corpus is. That is the same
+conclusion as §2.2 reached from a different direction.
+
+The k=1 parity arm is worth a note for anyone cost-constrained: a single
+passage recovers **+5.6 of the +10.2** points at a fifth of the context length.
+Latency within the sweep scales with context roughly as expected, but the k=5
+control was timed in an earlier session and the absolute milliseconds are not
+compared across sessions here — see §4 on drift.
+
+### Embedder: a domain-specific encoder did not retrieve better medicine
+
+`MedEmbed-large-v0.1` is a domain fine-tune *of bge-large itself* — same
+architecture, dimensions and tokenizer — so this is a one-variable comparison.
+Both corpora were re-embedded and re-indexed.
+
+| Corpus | Embedder | Accuracy | vs bge | Hit rate |
+| --- | --- | ---: | ---: | ---: |
+| parity | bge-large-en-v1.5 | 67.0% | control | 0.570 |
+| parity | MedEmbed-large-v0.1 | 65.5% | -1.5 (p=0.14) | 0.543 |
+| external | bge-large-en-v1.5 | 56.7% | control | 0.454 |
+| external | MedEmbed-large-v0.1 | 55.5% | -1.2 (p=0.31) | 0.399 |
+
+A null, leaning negative: MedEmbed is slightly worse on both corpora and its
+hit rate is lower on both, by 0.027 and 0.055. Neither accuracy difference is
+significant. The hit rate is the informative number — it says the domain
+adaptation did not make the *retriever* better at finding gold passages for
+these questions, which is the only route by which an embedder could have
+helped. "Medical" is not one distribution: an encoder tuned on clinical and
+literature text was not tuned on exam explanations, and the general-purpose
+encoder it was built from is at least as good here. The control stands.
+
 ## 8. A decision framework
 
 Generalising past this dataset, in the order the questions actually arise:
