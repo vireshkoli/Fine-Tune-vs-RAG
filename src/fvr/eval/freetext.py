@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,6 +33,57 @@ DEFAULT_N_ITEMS = 300
 
 class UnlabelledQuestionError(Exception):
     """A question with no gold answer cannot be a free-text reference."""
+
+
+_OPTION_LETTER = r"(?:[a-e]|i{1,3}|iv|vi{0,3})"
+
+#: Gold answers that only mean something relative to the hidden options, or to
+#: items enumerated in the stem. With the options removed there is nothing for a
+#: judge to grade: no free-text answer can "agree with" `B>A>D>C`.
+#:
+#: Found by the first smoke run, not anticipated. Validated by reading every hit
+#: on the frozen test split — 23 of 1,000 items, each genuinely ungradable. A
+#: first, looser version also flagged `3.1` (a Mount & Hume class code), `3-5%`
+#: and `Both GH and prolactin`, all perfectly gradable; the rules below are the
+#: tightened ones, and those three are pinned as negatives in the tests.
+OPTION_DEPENDENT_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "all/none of the above",
+        re.compile(r"\b(all|none)\b.{0,15}\b(above|of these)\b|^\s*(all|none)\s*$", re.I),
+    ),
+    (
+        "letter or ordering combination",
+        re.compile(rf"^\W*{_OPTION_LETTER}(?:\s*(?:>|,|&|and|-)\s*{_OPTION_LETTER})+\W*$", re.I),
+    ),
+    (
+        "numbered-statement combination",
+        re.compile(r"^\W*[1-9](?:\s*(?:,|&|and)\s*[1-9])+\W*$", re.I),
+    ),
+    ("true/false grid", re.compile(r"(?:\b[A-E][\.\)]\s*\S+\s*){3,}")),
+    (
+        "both/neither of the options",
+        re.compile(
+            r"^\s*(both|neither)\s*(?:of\s+)?(?:the\s+)?(?:above|these)?\s*$"
+            r"|^\s*(both|neither)\s+[a-e]\s*(?:and|&|,|nor|or)\s*[a-e]\b",
+            re.I,
+        ),
+    ),
+    (
+        "option letters in prose",
+        re.compile(
+            r"\boptions?\s+[a-e]\b|^\W*[a-e](?:\s*,\s*[a-e])+\s+(?:true|false|correct)", re.I
+        ),
+    ),
+)
+
+
+def option_dependent_reason(question: Question) -> str | None:
+    """Why this item cannot be graded with its options hidden, or None if it can."""
+    gold = reference_answer(question)
+    for name, rule in OPTION_DEPENDENT_RULES:
+        if rule.search(gold):
+            return name
+    return None
 
 
 def reference_answer(question: Question) -> str:
@@ -49,10 +101,19 @@ def select_freetext_items(
     Sorted by id before sampling so the selection depends only on the seed, not
     on the order the caller happened to load the split in. Every arm must be
     given the *same* items or the judged comparison is not paired.
+
+    Option-dependent items are excluded *before* sampling, so the set is still
+    exactly ``n`` gradable items rather than ``n`` minus whatever the sample
+    happened to draw.
     """
-    labelled = sorted((q for q in questions if q.answer_idx is not None), key=lambda q: q.id)
+    labelled = sorted(
+        (q for q in questions if q.answer_idx is not None and option_dependent_reason(q) is None),
+        key=lambda q: q.id,
+    )
     if len(labelled) < n:
-        raise ValueError(f"asked for {n} items but only {len(labelled)} are labelled")
+        raise ValueError(
+            f"asked for {n} items but only {len(labelled)} are labelled and gradable free-text"
+        )
     rng = random.Random(seed)
     chosen = rng.sample(labelled, n)
     return sorted(chosen, key=lambda q: q.id)
@@ -97,6 +158,9 @@ class FreeTextRun:
     latency: dict[str, float | int] = field(default_factory=dict)
     retrieval: dict[str, Any] | None = None
     device_occupancy: dict[str, Any] | None = None
+    #: Test-split items left out because their gold answer needs the options.
+    #: Recorded so the free-text set's size is explained, not just stated.
+    excluded_option_dependent: int = 0
 
     @property
     def empty_answers(self) -> int:
@@ -121,6 +185,7 @@ class FreeTextRun:
             "split_sha256": self.split_sha256,
             "n_items": len(self.answers),
             "empty_answers": self.empty_answers,
+            "excluded_option_dependent": self.excluded_option_dependent,
             "mean_completion_tokens": round(self.mean_completion_tokens, 2),
             "latency": self.latency,
             "retrieval": self.retrieval,

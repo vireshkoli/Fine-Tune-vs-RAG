@@ -18,6 +18,7 @@ from fvr.eval.freetext import (
     FreeTextAnswer,
     FreeTextRun,
     UnlabelledQuestionError,
+    option_dependent_reason,
     reference_answer,
     select_freetext_items,
 )
@@ -132,3 +133,85 @@ class TestRun:
 
     def test_empty_run_does_not_divide_by_zero(self) -> None:
         assert self.a_run([]).mean_completion_tokens == 0.0
+
+
+def with_gold(gold: str, qid: str = "g1") -> Question:
+    return Question(
+        id=qid,
+        question="Which of the following?",
+        options=[gold, "other one", "other two", "other three"],
+        answer_idx=0,
+        subject="Dental",
+    )
+
+
+class TestOptionDependence:
+    """Items whose gold answer is meaningless once the options are hidden.
+
+    The first smoke run produced a reference of `B>A>D>C`. No free-text answer
+    can agree with that, so a judge would score every arm 0 on it and the arms
+    would look worse for a reason that has nothing to do with them.
+    """
+
+    @pytest.mark.parametrize(
+        "gold",
+        [
+            "B>A>D>C",
+            "All of the above",
+            "All of the above.",
+            "None of the above",
+            "All",
+            "None",
+            "b,c,d true a false",
+            "A. i) B. ii) C. i) D. i) E. i)",
+            "1,2 & 3",
+            "Both A and B",
+            "Both of the above",
+        ],
+    )
+    def test_flags_golds_that_need_the_options(self, gold: str) -> None:
+        assert option_dependent_reason(with_gold(gold)) is not None
+
+    @pytest.mark.parametrize(
+        "gold",
+        [
+            # Real golds a first, looser rule set wrongly flagged. Pinned here
+            # so a future "simplification" cannot throw away gradable items.
+            "3.1",
+            "3-5%",
+            "Both GH and prolactin",
+            "Both lateral and medial pterygoid muscle",
+            "Vitamin A and D",
+            "1, decreases",
+            # Ordinary self-contained answers.
+            "Glycogen synthesis",
+            "aPTT",
+            "Erythromycin",
+            "Fibroblasts",
+        ],
+    )
+    def test_keeps_golds_that_stand_alone(self, gold: str) -> None:
+        assert option_dependent_reason(with_gold(gold)) is None
+
+    def test_selection_never_returns_an_option_dependent_item(self) -> None:
+        pool = questions(400) + [with_gold("All of the above", f"dep{i}") for i in range(100)]
+        chosen = select_freetext_items(pool, n=300)
+        assert len(chosen) == 300
+        assert all(option_dependent_reason(q) is None for q in chosen)
+
+    def test_exclusion_happens_before_sampling_so_n_is_exact(self) -> None:
+        pool = questions(290) + [with_gold("All of the above", f"dep{i}") for i in range(50)]
+        assert len(select_freetext_items(pool, n=290)) == 290
+        with pytest.raises(ValueError, match="only 290"):
+            select_freetext_items(pool, n=291)
+
+    def test_the_run_records_how_many_were_excluded(self) -> None:
+        run = FreeTextRun(
+            arm="base",
+            seed=42,
+            split_sha256="abc",
+            model={},
+            environment={},
+            excluded_option_dependent=23,
+        )
+        assert run.to_json()["excluded_option_dependent"] == 23

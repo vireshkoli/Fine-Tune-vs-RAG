@@ -32,6 +32,7 @@ from fvr.eval.freetext import (
     DEFAULT_N_ITEMS,
     FreeTextAnswer,
     FreeTextRun,
+    option_dependent_reason,
     reference_answer,
     select_freetext_items,
 )
@@ -90,12 +91,15 @@ def main() -> int:
     test_ids = set(split_ids["test"])
 
     pool, _ = load_medmcqa("validation")
-    questions = select_freetext_items(
-        [q for q in pool if q.id in test_ids], n=args.n_items, seed=config.seed
-    )
+    test_items = [q for q in pool if q.id in test_ids]
+    excluded = [q for q in test_items if q.answer_idx is not None and option_dependent_reason(q)]
+    questions = select_freetext_items(test_items, n=args.n_items, seed=config.seed)
     if args.limit:
         questions = questions[: args.limit]
-    console.print(f"Free-text set: {len(questions)} items from the frozen test split")
+    console.print(
+        f"Free-text set: {len(questions)} items from the frozen test split "
+        f"({len(excluded)} excluded: gold answer only meaningful with the options shown)"
+    )
 
     model_config = load_model_config(args.model)
     loaded = load_base_model(model_config, use_cache=not args.adapter)
@@ -171,6 +175,7 @@ def main() -> int:
 
     run = FreeTextRun(
         arm=arm.name,
+        excluded_option_dependent=len(excluded),
         seed=seed,
         split_sha256=manifest["splits"]["test"]["sha256"],
         model=loaded.describe(),
