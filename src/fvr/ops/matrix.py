@@ -40,6 +40,7 @@ GROUP_ORDER: tuple[str, ...] = (
     "quantization",
     "topk",
     "embedder",
+    "freetext",
     "cross-base",
     "seeds",
     "rank",
@@ -374,6 +375,26 @@ def build_matrix(paths: Paths | None = None) -> list[Job]:
                 paths,
                 model="configs/model/qwen3-8b-nf4.yaml",
                 tag=f"{arm}-nf4",
+            )
+        )
+
+    # --- Free-text generation ------------------------------------------------
+    # The answers the LLM judge grades. Generation only: judging runs separately
+    # against a served judge, so a rubric correction re-judges without
+    # regenerating. Headline arms at seed 42, the same 300 gradable items for
+    # every arm. Classified as eval jobs, so the runner refuses to time them on a
+    # shared GPU.
+    for arm in ("base", "rag-parity", "rag-external", "qlora", "qlora-rag", "qlora-rag-parity"):
+        command = ["python", "scripts/12_freetext_eval.py", "--arm", arm]
+        if arm.startswith("qlora"):
+            command += ["--adapter", _adapter_path(paths, "qlora-r16")]
+        jobs.append(
+            Job(
+                name=f"freetext-{arm}",
+                group="freetext",
+                command=tuple(command),
+                produces=paths.results / "freetext" / f"{arm}_seed42.json",
+                gpu_hours=0.2,
             )
         )
 
