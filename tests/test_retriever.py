@@ -479,3 +479,41 @@ class TestRetrieverReusesItsEncoder:
         )
         retriever.retrieve_many([a_question()])
         assert retriever.embedder() is sentinel
+
+
+class TestFreeTextRetrievalQuery:
+    """The free-text arms hide the options, so retrieval must not search on them.
+
+    The bug this guards: free-text RAG built its query from stem plus options,
+    so the context was chosen by searching for the candidate answers — putting
+    back through retrieval exactly what the prompt had taken away.
+    """
+
+    question = Question(
+        id="q1",
+        question="Which vessel supplies the myocardium?",
+        options=["Coronary artery", "Portal vein", "Aorta", "Vena cava"],
+        answer_idx=0,
+    )
+
+    def test_mcq_query_still_carries_the_options(self) -> None:
+        from fvr.retrieval.retriever import Retriever
+
+        query = Retriever._query_text(None, self.question)  # type: ignore[arg-type]
+        assert (
+            query
+            == "Which vessel supplies the myocardium? Coronary artery Portal vein Aorta Vena cava"
+        )
+
+    def test_stem_only_query_contains_no_option_text(self) -> None:
+        from fvr.retrieval.retriever import Retriever
+
+        query = Retriever._query_text(None, self.question, with_options=False)  # type: ignore[arg-type]
+        assert query == self.question.question
+        for option in self.question.options:
+            assert option not in query
+
+    def test_the_freetext_script_asks_for_stem_only_retrieval(self) -> None:
+        script = (PROJECT_ROOT / "scripts" / "12_freetext_eval.py").read_text(encoding="utf-8")
+        assert "with_options=False" in script
+        assert "retrieve_many(" in script

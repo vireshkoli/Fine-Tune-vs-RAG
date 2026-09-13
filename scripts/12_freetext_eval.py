@@ -131,13 +131,18 @@ def main() -> int:
         console.print(f"  {len(retriever.index):,} passages indexed ({corpus})")
         retrieved = []
         for start in range(0, len(questions), batch_size):
-            retrieved.extend(retriever.retrieve_many(questions[start : start + batch_size]))
+            retrieved.extend(
+                retriever.retrieve_many(questions[start : start + batch_size], with_options=False)
+            )
         retrieval_info = {
             "corpus": corpus,
             "n_passages": len(retriever.index),
             "embedder": embedder_config.name,
             "top_k": retrieval_config.top_k,
             "max_context_chars": retrieval_config.max_context_chars,
+            # Recorded because it is the difference between a valid free-text RAG
+            # arm and one whose context was chosen by searching for the answers.
+            "query": "question stem only; options hidden from retrieval and prompt",
         }
 
     prompts = [build_freetext_prompt(q, ctx) for q, ctx in zip(questions, retrieved, strict=True)]

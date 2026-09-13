@@ -93,11 +93,27 @@ class Retriever:
     def retrieve(self, question: Question) -> list[Passage]:
         return self.retrieve_many([question])[0]
 
-    def retrieve_many(self, questions: list[Question]) -> list[list[Passage]]:
-        """Batched retrieval — embedding one query at a time wastes the GPU."""
+    def retrieve_many(
+        self, questions: list[Question], *, with_options: bool = True
+    ) -> list[list[Passage]]:
+        """Batched retrieval — embedding one query at a time wastes the GPU.
+
+        ``with_options=False`` searches on the stem alone, and the free-text arms
+        must use it. They hide the options from the prompt; a query built from the
+        options would put them straight back in through the context, steering
+        retrieval toward passages that name the candidate answers — the gold one
+        included. The MCQ arms show the options, so for them the default stands.
+        """
         if not questions:
             return []
-        queries = [self._query_text(q) for q in questions]
+        return self.retrieve_texts(
+            [self._query_text(q, with_options=with_options) for q in questions]
+        )
+
+    def retrieve_texts(self, queries: list[str]) -> list[list[Passage]]:
+        """Batched retrieval for arbitrary query strings."""
+        if not queries:
+            return []
         vectors = embed_queries(queries, self.embedder_config, model=self.embedder())
         hits = self.index.search(vectors, self.config.top_k)
         return [
@@ -108,13 +124,16 @@ class Retriever:
             for row in hits
         ]
 
-    def _query_text(self, question: Question) -> str:
-        """Question stem plus options.
+    def _query_text(self, question: Question, *, with_options: bool = True) -> str:
+        """Question stem plus options, or the stem alone.
 
         The options carry most of the retrievable signal in an exam item — the
         stem alone is often a generic vignette, while the option list names the
-        specific entities worth looking up.
+        specific entities worth looking up. That is exactly why they must not be
+        used when the arm is not allowed to see them.
         """
+        if not with_options:
+            return question.question
         return question.question + " " + " ".join(question.options)
 
 
