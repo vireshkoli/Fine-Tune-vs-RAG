@@ -37,7 +37,7 @@ def main() -> int:
     project = load_config()
     paths = bootstrap_env(project)
 
-    aggregate = Aggregate.load(paths.results / "runs")
+    aggregate = Aggregate.load(paths.results / "runs", reference_seed=project.seed)
     if not aggregate.runs:
         console.print("[red]No runs found under results/runs/.[/]")
         return 1
@@ -64,9 +64,9 @@ def main() -> int:
 
     figures = paths.results / "figures"
     arms = aggregate.arms
-    accuracy = [aggregate.for_arm(a)[0].accuracy for a in arms]
-    ci = [aggregate.for_arm(a)[0].ci for a in arms]
-    p95 = [aggregate.for_arm(a)[0].p95_ms for a in arms]
+    accuracy = [aggregate.primary(a).accuracy for a in arms]
+    ci = [aggregate.primary(a).ci for a in arms]
+    p95 = [aggregate.primary(a).p95_ms for a in arms]
     per_1k = [1000 * costs[a].usd_per_query(amortization["default_volume"]) for a in arms]
 
     for theme in (Theme.light(), Theme.dark()):

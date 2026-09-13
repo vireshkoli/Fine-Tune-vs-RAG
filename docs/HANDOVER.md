@@ -134,16 +134,22 @@ project's downloads never entered the shared cache to begin with.
 
 ## 7. Known gaps, in priority order
 
-1. **Seeds 2 and 3** (~10 GPU-hours). Everything is single-seed (42). The
-   headline comparisons are paired within-seed, which is the stronger test, but
-   training-seed variance is unmeasured.
-2. **The ablation grid** (~25 GPU-hours): LoRA rank {8,16,32,64}, epochs, top-k,
-   `bge` vs `MedEmbed`, bf16 vs NF4. The chosen config is defensible but not
-   shown to be optimal.
-3. **A size-matched external corpus.** The two indices differ 7.3x in size, so
-   the parity-vs-external contrast conflates corpus *content* with corpus
-   *size*. Subsampling `external` to 218k chunks separates them.
-4. **Hand-annotation of `results/error_analysis/*_review.csv`.** The rows are
-   stratified and pre-filled; the `human_label` and `notes` columns are blank.
-5. **Live inference in the Space** (v0.1.1), once there is quota to test it
-   against.
+1. **The free-text arm and its LLM judge.** Built, not run.
+   `scripts/12_freetext_eval.py` generates answers, `scripts/13_judge_freetext.py`
+   grades them against the frozen rubric in `src/fvr/prompts/judge.py`, and the
+   judge is served over HTTP from a *separate* vLLM virtualenv
+   (`make judge-server`) so vLLM never rewrites this project's torch. Needs the
+   37 GiB judge download, ~2-4 GPU-hours, then 50 hand labels for Cohen's κ.
+2. **The MIRIAD parity sub-experiment.** Not built. Fine-tune closed-book on
+   MIRIAD question→answer pairs and index the identical source passages. It is
+   evaluated free-text, so it depends on item 1.
+3. **Hand-annotation of `results/error_analysis/*_review.csv`.** Stratified and
+   pre-filled; the `human_label` and `notes` columns are blank.
+4. **Live inference demo.** ZeroGPU Spaces are hostable on a free account
+   (verified by creating and deleting one); the static Space stays as the
+   permanent fallback.
+
+Resolved since the first version of this document: training-seed variance
+(three seeds), the full ablation grid (rank, epochs, top-k, embedder,
+quantisation), the size-matched external corpus, and the cross-base check on
+Llama-3.1-8B. All in REPORT §2.2 and §7.5, produced by `make matrix-run`.

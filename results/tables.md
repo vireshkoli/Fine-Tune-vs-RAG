@@ -1,20 +1,20 @@
 <!-- results -->
-| Arm | Accuracy | 95% CI | p50 | p95 | Prompt tokens | Retrieval hit | Grounded |
-| --- | ---: | :---: | ---: | ---: | ---: | ---: | ---: |
-| `base` | **56.8%** | [53.8, 59.9] | 103 ms | 118 ms | 113 | — | — |
-| `qlora-rag-parity` | **71.1%** | [68.3, 73.9] | 171 ms | 193 ms | 656 | 0.570 | 0.723 |
-| `qlora-rag` | **61.4%** | [58.4, 64.4] | 179 ms | 195 ms | 738 | 0.454 | 0.628 |
-| `qlora` | **62.9%** | [60.0, 65.9] | 102 ms | 112 ms | 113 | — | — |
-| `rag-external` | **56.7%** | [53.6, 59.8] | 179 ms | 195 ms | 738 | 0.454 | 0.635 |
-| `rag-parity` | **67.0%** | [64.1, 69.9] | 171 ms | 193 ms | 656 | 0.570 | 0.725 |
+| Arm | Accuracy | 95% CI | Seeds (mean ± SD) | p50 | p95 | Prompt tokens | Retrieval hit | Grounded |
+| --- | ---: | :---: | :---: | ---: | ---: | ---: | ---: | ---: |
+| `base` | **56.8%** | [53.8, 59.9] | — | 103 ms | 118 ms | 113 | — | — |
+| `qlora-rag-parity` | **71.1%** | [68.3, 73.9] | 71.7 ± 0.8 (n=3) | 171 ms | 193 ms | 656 | 0.570 | 0.723 |
+| `qlora-rag` | **61.4%** | [58.4, 64.4] | 62.3 ± 0.8 (n=3) | 179 ms | 195 ms | 738 | 0.454 | 0.628 |
+| `qlora` | **62.9%** | [60.0, 65.9] | 62.8 ± 1.1 (n=3) | 102 ms | 112 ms | 113 | — | — |
+| `rag-external` | **56.7%** | [53.6, 59.8] | — | 179 ms | 195 ms | 738 | 0.454 | 0.635 |
+| `rag-parity` | **67.0%** | [64.1, 69.9] | — | 171 ms | 193 ms | 656 | 0.570 | 0.725 |
 
 <!-- headline -->
-| Arm | Accuracy | 95% CI | p50 | p95 | Prompt tokens | Retrieval hit | Grounded |
-| --- | ---: | :---: | ---: | ---: | ---: | ---: | ---: |
-| `base` | **56.8%** | [53.8, 59.9] | 103 ms | 118 ms | 113 | — | — |
-| `qlora-rag` | **61.4%** | [58.4, 64.4] | 179 ms | 195 ms | 738 | 0.454 | 0.628 |
-| `qlora` | **62.9%** | [60.0, 65.9] | 102 ms | 112 ms | 113 | — | — |
-| `rag-external` | **56.7%** | [53.6, 59.8] | 179 ms | 195 ms | 738 | 0.454 | 0.635 |
+| Arm | Accuracy | 95% CI | Seeds (mean ± SD) | p50 | p95 | Prompt tokens | Retrieval hit | Grounded |
+| --- | ---: | :---: | :---: | ---: | ---: | ---: | ---: | ---: |
+| `base` | **56.8%** | [53.8, 59.9] | — | 103 ms | 118 ms | 113 | — | — |
+| `qlora-rag` | **61.4%** | [58.4, 64.4] | 62.3 ± 0.8 (n=3) | 179 ms | 195 ms | 738 | 0.454 | 0.628 |
+| `qlora` | **62.9%** | [60.0, 65.9] | 62.8 ± 1.1 (n=3) | 102 ms | 112 ms | 113 | — | — |
+| `rag-external` | **56.7%** | [53.6, 59.8] | — | 179 ms | 195 ms | 738 | 0.454 | 0.635 |
 
 <!-- comparisons -->
 | Comparison | Δ accuracy | Discordant (A/B) | p | Verdict |
@@ -61,4 +61,4 @@
 | 10,000,000 | $0.011 | $0.019 | $0.020 | $0.012 | $0.020 | $0.019 |
 
 <!-- provenance -->
-Generated from `results/runs/` by `make report`. Test split `9aac1bc01a70dcb6…` (n=1000), git `f8dceb7868a0`, NVIDIA A40, torch 2.11.0+cu128.
+Generated from `results/runs/` by `make report`. Reported runs use training seed 42; other seeds feed the seed column only. Test split `9aac1bc01a70dcb6…` (n=1000), git `f8dceb7868a0`, NVIDIA A40, torch 2.11.0+cu128.

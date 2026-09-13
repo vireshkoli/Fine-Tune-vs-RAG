@@ -55,7 +55,7 @@ def build_costs(aggregate: Aggregate, rates: RateCard, paths: Paths) -> dict[str
     costs: dict[str, ArmCost] = {}
     for name in aggregate.arms:
         arm = ARMS_BY_NAME.get(name)
-        run = aggregate.for_arm(name)[0]
+        run = aggregate.primary(name)
         corpus = arm.corpus if arm is not None else "none"
         costs[name] = ArmCost(
             arm=name,

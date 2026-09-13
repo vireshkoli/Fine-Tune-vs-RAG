@@ -1,0 +1,22 @@
+{
+  "output_dir": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/qlora-r32",
+  "train_gpu_seconds": 18327.400661911815,
+  "final_step": 1875,
+  "train_loss": 1.2773675710042318,
+  "best_eval_loss": 1.1956262588500977,
+  "resumed_from": null,
+  "n_train": 30000,
+  "n_eval": 500,
+  "trainable_params": 87293952,
+  "total_params": 4805145600,
+  "trainable_pct": 1.8166765227675932,
+  "device_occupancy": {
+    "device": 1,
+    "total_used_mib": 3,
+    "foreign_pids": [],
+    "foreign_mib": 0,
+    "exclusive": true
+  },
+  "memory_cap_gib": 24.0,
+  "peak_memory_gib": 12.479570865631104
+}

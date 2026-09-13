@@ -46,6 +46,18 @@ def a_payload(arm: str = "base", *, accuracy: float = 0.6, split: str = "abc123"
     }
 
 
+def a_seeded_payload(
+    arm: str, seed: int, *, accuracy: float, predictions: list[int]
+) -> dict[str, Any]:
+    payload = a_payload(arm, accuracy=accuracy)
+    payload["seed"] = seed
+    payload["predictions"] = [
+        {"question_id": f"q{i + 1}", "predicted_idx": idx, "prompt_tokens": 100}
+        for i, idx in enumerate(predictions)
+    ]
+    return payload
+
+
 def an_aggregate(*payloads: dict[str, Any]) -> Aggregate:
     return Aggregate(
         runs=[
@@ -87,6 +99,54 @@ class TestAggregate:
     def test_compare_raises_for_a_missing_arm(self) -> None:
         with pytest.raises(KeyError):
             an_aggregate(a_payload("base")).compare("base", "absent", {})
+
+
+class TestReferenceSeed:
+    """Which run is *the* number for an arm, once seed replicates exist.
+
+    The bug these guard against was live: runs load in filename order, so
+    `qlora_seed1.json` sorted before `qlora_seed42.json`, `for_arm(...)[0]`
+    became seed 1 for every trained arm, and the headline McNemar would have
+    been rebuilt pairing a seed-1 fine-tune against a seed-42 baseline — with
+    every existing test still green.
+    """
+
+    def replicated(self) -> Aggregate:
+        # Filename order as Aggregate.load produces it: seed1, seed2, seed42.
+        return an_aggregate(
+            a_seeded_payload("qlora", 1, accuracy=0.30, predictions=[9, 9, 9]),
+            a_seeded_payload("qlora", 2, accuracy=0.31, predictions=[9, 9, 9]),
+            a_seeded_payload("qlora", 42, accuracy=0.66, predictions=[0, 1, 9]),
+            a_seeded_payload("base", 42, accuracy=0.33, predictions=[0, 9, 9]),
+        )
+
+    def test_primary_is_the_reference_seed_not_the_first_file(self) -> None:
+        assert self.replicated().primary("qlora").seed == 42
+
+    def test_compare_pairs_at_the_reference_seed(self) -> None:
+        gold: dict[str, int | None] = {"q1": 0, "q2": 1, "q3": 2}
+        result = self.replicated().compare("qlora", "base", gold)
+        # Seed 42 gets q1 and q2 right, base only q1. Seeds 1 and 2 get nothing
+        # right, so pairing them would have produced a negative delta.
+        assert result.delta == pytest.approx(1 / 3)
+
+    def test_results_row_reports_the_reference_seed_and_the_spread(self) -> None:
+        table = results_table(self.replicated())
+        row = next(line for line in table.splitlines() if line.startswith("| `qlora`"))
+        assert "**66.0%**" in row, "headline cell must be seed 42, not a cross-seed mean"
+        assert "(n=3)" in row, "replicates must still be visible, in their own column"
+
+    def test_a_single_run_resolves_whatever_its_seed(self) -> None:
+        aggregate = an_aggregate(a_seeded_payload("base", 7, accuracy=0.5, predictions=[0, 1, 2]))
+        assert aggregate.primary("base").seed == 7
+
+    def test_ambiguous_replicates_without_the_reference_seed_refuse(self) -> None:
+        aggregate = an_aggregate(
+            a_seeded_payload("qlora", 1, accuracy=0.5, predictions=[0, 1, 2]),
+            a_seeded_payload("qlora", 2, accuracy=0.5, predictions=[0, 1, 2]),
+        )
+        with pytest.raises(ValueError, match="refusing to guess"):
+            aggregate.primary("qlora")
 
 
 class TestTables:
@@ -153,6 +213,12 @@ class TestCommittedArtifacts:
         aggregate = Aggregate.load(RESULTS / "runs")
         if aggregate.runs:
             aggregate.assert_same_split()
+
+    def test_every_committed_arm_reports_its_reference_seed_run(self) -> None:
+        """The same guard, against the real results rather than a fixture."""
+        aggregate = Aggregate.load(RESULTS / "runs")
+        for arm in aggregate.arms:
+            assert aggregate.primary(arm).seed == aggregate.reference_seed, arm
 
     def test_committed_runs_match_the_split_manifest(self) -> None:
         manifest = json.loads((RESULTS / "split_manifest.json").read_text(encoding="utf-8"))

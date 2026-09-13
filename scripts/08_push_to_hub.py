@@ -45,7 +45,7 @@ def build_space_data(paths: Paths) -> Path:
     from fvr.report.aggregate import Aggregate
     from fvr.report.costs import build_costs, cost_inputs, load_rate_card
 
-    aggregate = Aggregate.load(paths.results / "runs")
+    aggregate = Aggregate.load(paths.results / "runs", reference_seed=load_config().seed)
     if not aggregate.runs:
         raise SystemExit("no runs under results/runs/ — nothing to build a demo from")
 

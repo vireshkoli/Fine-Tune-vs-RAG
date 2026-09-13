@@ -34,14 +34,16 @@ is what makes the central comparison possible:
 | `qlora-rag-parity` | **71.1%** | +14.3 (p<0.0001) |
 
 Minimum detectable effect at n=1,000 is **6.3 points**. Comparisons use paired
-McNemar over identical items.
+McNemar over identical items. Every table reports training seed 42; the trained
+arms were replicated at two further seeds — `qlora` 62.8 ± 1.1,
+`qlora-rag` 62.3 ± 0.8, `qlora-rag-parity` 71.7 ± 0.8.
 
 ## The three findings
 
 **1. On identical information, the index beat the weights.** `rag-parity`
 retrieves the same MedMCQA explanations the fine-tune trained on — same base
 model, same prompt, same facts. Retrieval gained +10.2 points, fine-tuning
-+6.1, and the difference between them is significant (p = 0.016).
++6.1 — and across three training seeds the gap is **+4.2 points, 95% CI [+1.0, +7.2], p = 0.008**.
 
 **2. Retrieval over the wrong corpus was worth nothing.** `rag-external` reads
 1.6M chunks of peer-reviewed literature and scores **+0.001 against base
@@ -127,7 +129,18 @@ Asserted in tests, not promised in prose:
 
 The full grid (rank, epochs, top-k, embedder, quantisation, seeds, cross-base)
 runs from `make matrix`; results land in `results/ablations/` and are written up
-in [REPORT.md](REPORT.md#75-ablations). One worth surfacing here:
+in [REPORT.md](REPORT.md#75-ablations). Worth surfacing here:
+
+**The headline survives three training seeds.** Retrained at seeds 1 and 2, the
+index beats the weights at every seed (+4.1, +3.1, +5.3). A seed-aware paired
+permutation test over all three puts the gap at **+4.2 points, 95% CI [+1.0, +7.2], p = 0.008** — 3.8× the
+training-seed SD.
+
+**Lower validation loss did not buy accuracy.** Validation loss falls
+monotonically with LoRA rank (r=8 → r=64), but test accuracy is flat — every
+rank within 0.3 points of r=16, inside the 1.1-point seed SD. Extra epochs cost
+up to 3× and trended *worse* (62.9 → 62.4 → 61.6). The loss is dominated by
+explanation tokens; accuracy is scored on one letter.
 
 **The finding replicates on Llama-3.1-8B.** Same recipe, no retuning: the
 index beats the weights by +4.4 points on Llama (p=0.019) versus +4.1 on Qwen
@@ -148,8 +161,9 @@ deployment.
 
 ## Honest limitations
 
-- **Single seed.** All results are seed 42. Headline comparisons are paired
-  within-seed — the stronger test — but training-seed variance is unmeasured.
+- ~~Single seed.~~ **Measured**: three training seeds. Fine-tuned accuracy
+  spreads 1.1 points across seeds, and the headline holds at +4.2 points, 95% CI [+1.0, +7.2], p = 0.008.
+  The rank and epoch ablations are single-seed and read against that spread.
 - **Contamination is present but measured, not hand-waved.** ~9% of test stems
   are reproduced verbatim above a shuffled-reference chance baseline, so some
   absolute accuracy is recall. But shuffling the answer options changes the base
