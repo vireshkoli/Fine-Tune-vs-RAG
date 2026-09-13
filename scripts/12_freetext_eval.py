@@ -19,6 +19,7 @@ from fvr.config import bootstrap_env, load_config  # isort: skip
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -102,6 +103,12 @@ def main() -> int:
     )
 
     model_config = load_model_config(args.model)
+    # The card actually in use is whatever CUDA_VISIBLE_DEVICES pinned — the
+    # matrix runner sets it per job. The config's `device` is renumbered to 0
+    # inside that mask, so recording occupancy for it would describe GPU 0 on a
+    # GPU 1 run: the wrong card and the wrong tenants.
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    physical_device = int(visible) if visible.isdigit() else model_config.device
     loaded = load_base_model(model_config, use_cache=not args.adapter)
     if args.adapter:
         from fvr.models.loader import attach_adapter
@@ -183,7 +190,7 @@ def main() -> int:
         answers=answers,
         latency=recorder.summary().as_dict(),
         retrieval=retrieval_info,
-        device_occupancy=device_occupancy(model_config.device).as_dict(),
+        device_occupancy=device_occupancy(physical_device).as_dict(),
     )
     out = Path(args.out) if args.out else paths.results / "freetext" / f"{arm.name}_seed{seed}.json"
     run.write(out)

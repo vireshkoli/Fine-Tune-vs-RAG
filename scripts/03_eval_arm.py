@@ -15,6 +15,7 @@ from fvr.config import bootstrap_env, load_config  # isort: skip
 
 import argparse
 import json
+import os
 import sys
 
 from rich.console import Console
@@ -95,6 +96,10 @@ def main() -> int:
         questions = questions[: args.limit]
 
     model_config = load_model_config(args.model)
+    # Record occupancy for the physical card CUDA_VISIBLE_DEVICES pinned, not the
+    # config's renumbered index — see 12_freetext_eval.py.
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    physical_device = int(visible) if visible.isdigit() else model_config.device
     console.print(
         f"Loading [cyan]{model_config.repo_id}[/] @ {model_config.revision[:12]} "
         f"({model_config.dtype}, thinking={model_config.enable_thinking})…"
@@ -152,7 +157,7 @@ def main() -> int:
             batch_size=batch_size,
             retrieve=retrieve,
             retrieval_info=retrieval_info,
-            device=model_config.device,
+            device=physical_device,
             progress=tick,
         )
 
@@ -184,7 +189,7 @@ def main() -> int:
         )
     if result.device_occupancy and not result.device_occupancy.get("exclusive"):
         console.print(
-            f"  [yellow]WARNING: GPU {model_config.device} was shared during timing "
+            f"  [yellow]WARNING: GPU {physical_device} was shared during timing "
             f"({result.device_occupancy['foreign_mib']} MiB held by another process). "
             "Latency is not comparable with exclusive runs.[/]"
         )

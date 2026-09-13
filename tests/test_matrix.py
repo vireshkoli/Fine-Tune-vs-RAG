@@ -148,6 +148,7 @@ class TestBudget:
             "epochs",
             "topk",
             "embedder",
+            "freetext",
             "quantization",
             "cross-base",
         }
@@ -190,3 +191,27 @@ class TestResumability:
         assert summary["failed"] == 1
         assert summary["skipped"] == 1
         assert summary["gpu_hours"] == pytest.approx(1.02, abs=0.01)
+
+
+class TestFreeText:
+    def test_generates_for_every_headline_and_parity_arm_at_seed_42(
+        self, matrix: list[Job]
+    ) -> None:
+        jobs = [job for job in matrix if job.group == "freetext"]
+        arms = {job.command[job.command.index("--arm") + 1] for job in jobs}
+        assert arms == {
+            "base",
+            "rag-parity",
+            "rag-external",
+            "qlora",
+            "qlora-rag",
+            "qlora-rag-parity",
+        }
+        for job in jobs:
+            assert job.produces.parent.name == "freetext"
+            assert job.produces.name.endswith("_seed42.json")
+
+    def test_only_the_fine_tuned_arms_get_an_adapter(self, matrix: list[Job]) -> None:
+        for job in (j for j in matrix if j.group == "freetext"):
+            arm = job.command[job.command.index("--arm") + 1]
+            assert ("--adapter" in job.command) == arm.startswith("qlora"), job.name
