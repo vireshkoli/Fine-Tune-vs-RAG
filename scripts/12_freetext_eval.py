@@ -20,6 +20,7 @@ from fvr.config import bootstrap_env, load_config  # isort: skip
 import argparse
 import json
 import sys
+from pathlib import Path
 
 from rich.console import Console
 from rich.progress import Progress
@@ -59,6 +60,12 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--n-items", type=int, default=DEFAULT_N_ITEMS)
     parser.add_argument("--limit", type=int, default=None, help="smoke run")
+    parser.add_argument(
+        "--out",
+        default=None,
+        help="write to this path instead of results/freetext/ — use for smoke runs, so a "
+        "partial answer set can never be mistaken for the real artifact",
+    )
     args = parser.parse_args()
 
     config = load_config()
@@ -173,7 +180,7 @@ def main() -> int:
         retrieval=retrieval_info,
         device_occupancy=device_occupancy(model_config.device).as_dict(),
     )
-    out = paths.results / "freetext" / f"{arm.name}_seed{seed}.json"
+    out = Path(args.out) if args.out else paths.results / "freetext" / f"{arm.name}_seed{seed}.json"
     run.write(out)
 
     console.print()

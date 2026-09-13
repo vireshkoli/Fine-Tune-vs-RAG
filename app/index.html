@@ -119,8 +119,10 @@ deliverable.</strong></p>
 
 <div class="card">
 <ul>
-  <li><strong>Single seed.</strong> All results are seed 42. Headline comparisons are paired
-  within-seed — the stronger test — but training-seed variance is unmeasured.</li>
+  <li><strong>Three training seeds, reported at one.</strong> Every table shows seed 42.
+  Replicated at seeds 1 and 2, fine-tuned accuracy spreads 1.1 points, and the
+  index-over-weights gap holds across all three: +4.2 points, 95% CI [+1.0, +7.2],
+  p&nbsp;=&nbsp;0.008.</li>
   <li><strong>Contamination is present but measured.</strong> ~9% of test stems are
   reproduced verbatim above a shuffled-reference chance baseline. But shuffling the answer
   options changes the base model's score by only −1.6 points, so it is not relying on

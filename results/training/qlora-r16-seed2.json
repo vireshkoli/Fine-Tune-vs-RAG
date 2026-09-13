@@ -1,0 +1,24 @@
+{
+  "output_dir": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/qlora-r16-seed2",
+  "train_gpu_seconds": 18814.064162496477,
+  "final_step": 1875,
+  "train_loss": 1.2806258763631184,
+  "best_eval_loss": 1.2017970085144043,
+  "resumed_from": null,
+  "n_train": 30000,
+  "n_eval": 500,
+  "trainable_params": 43646976,
+  "total_params": 4761498624,
+  "trainable_pct": 0.9166646773770022,
+  "device_occupancy": {
+    "device": 1,
+    "total_used_mib": 7523,
+    "foreign_pids": [
+      99001
+    ],
+    "foreign_mib": 7514,
+    "exclusive": false
+  },
+  "memory_cap_gib": 24.0,
+  "peak_memory_gib": 12.35250997543335
+}

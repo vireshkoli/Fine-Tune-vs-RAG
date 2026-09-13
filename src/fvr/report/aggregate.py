@@ -16,6 +16,10 @@ from typing import Any
 
 from fvr.eval.metrics import Comparison, mcnemar, seed_variance
 
+#: The training seed every headline number is reported at. Mirrors
+#: ``configs/base.yaml``; entry points pass the loaded config value explicitly.
+DEFAULT_REFERENCE_SEED = 42
+
 
 @dataclass(frozen=True)
 class RunRecord:
@@ -69,9 +73,12 @@ class Aggregate:
     """All runs, grouped by arm."""
 
     runs: list[RunRecord] = field(default_factory=list)
+    #: Which seed's run is *the* number for an arm. Everything else for that
+    #: arm is a replicate and feeds only the seed-variance column.
+    reference_seed: int = DEFAULT_REFERENCE_SEED
 
     @classmethod
-    def load(cls, runs_dir: Path) -> Aggregate:
+    def load(cls, runs_dir: Path, *, reference_seed: int = DEFAULT_REFERENCE_SEED) -> Aggregate:
         records: list[RunRecord] = []
         for path in sorted(Path(runs_dir).glob("*.json")):
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -83,7 +90,7 @@ class Aggregate:
                     payload=payload,
                 )
             )
-        return cls(runs=records)
+        return cls(runs=records, reference_seed=reference_seed)
 
     @property
     def arms(self) -> list[str]:
@@ -95,6 +102,35 @@ class Aggregate:
 
     def for_arm(self, arm: str) -> list[RunRecord]:
         return [r for r in self.runs if r.arm == arm]
+
+    def primary(self, arm: str) -> RunRecord:
+        """The run reported as this arm's number: the reference seed.
+
+        Never ``for_arm(arm)[0]``. Runs load in filename order, and
+        ``qlora_seed1.json`` sorts before ``qlora_seed42.json`` — so the moment
+        seed replicates were added, "the first run" silently became seed 1 for
+        every trained arm while base stayed at seed 42. Every headline table,
+        every paired McNemar test and the cost model would have been rebuilt on
+        a different training run, pairing seed-1 fine-tunes against seed-42
+        baselines, with all tests still passing. Selecting by seed makes the
+        choice explicit and makes the ambiguous case an error.
+        """
+        runs = self.for_arm(arm)
+        if not runs:
+            raise KeyError(f"no runs for arm {arm!r}")
+        reference = [r for r in runs if r.seed == self.reference_seed]
+        if reference:
+            return reference[0]
+        if len(runs) == 1:
+            # One run is unambiguous whatever its seed.
+            return runs[0]
+        raise ValueError(
+            f"arm {arm!r} has runs at seeds {sorted(r.seed for r in runs)} but none at the "
+            f"reference seed {self.reference_seed}; refusing to guess which one to report"
+        )
+
+    def seeds(self, arm: str) -> list[int]:
+        return sorted(r.seed for r in self.for_arm(arm))
 
     def split_hashes(self) -> set[str]:
         return {str(r.payload["split_sha256"]) for r in self.runs}
@@ -116,12 +152,9 @@ class Aggregate:
         return seed_variance([r.accuracy for r in self.for_arm(arm)])
 
     def compare(self, arm_a: str, arm_b: str, gold: dict[str, int | None]) -> Comparison:
-        """Paired comparison on the items both arms actually scored."""
-        a_runs, b_runs = self.for_arm(arm_a), self.for_arm(arm_b)
-        if not a_runs or not b_runs:
-            raise KeyError(f"missing runs for {arm_a!r} or {arm_b!r}")
-        a_correct = a_runs[0].correctness(gold)
-        b_correct = b_runs[0].correctness(gold)
+        """Paired comparison on the items both arms scored, at the reference seed."""
+        a_correct = self.primary(arm_a).correctness(gold)
+        b_correct = self.primary(arm_b).correctness(gold)
         shared = sorted(set(a_correct) & set(b_correct))
         return mcnemar([a_correct[i] for i in shared], [b_correct[i] for i in shared])
 

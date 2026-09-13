@@ -1,0 +1,22 @@
+{
+  "output_dir": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/qlora-e2",
+  "train_gpu_seconds": 33181.45933946408,
+  "final_step": 3750,
+  "train_loss": 1.1203142987569172,
+  "best_eval_loss": 1.1987344026565552,
+  "resumed_from": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/qlora-e2/checkpoint-200",
+  "n_train": 30000,
+  "n_eval": 500,
+  "trainable_params": 43646976,
+  "total_params": 4761498624,
+  "trainable_pct": 0.9166646773770022,
+  "device_occupancy": {
+    "device": 0,
+    "total_used_mib": 3,
+    "foreign_pids": [],
+    "foreign_mib": 0,
+    "exclusive": true
+  },
+  "memory_cap_gib": 24.0,
+  "peak_memory_gib": 12.557497501373291
+}

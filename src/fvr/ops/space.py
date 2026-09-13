@@ -118,7 +118,7 @@ def select_items(
     seed: int = 42,
 ) -> list[DemoItem]:
     """Stratified pick across disagreement buckets, deterministic for a seed."""
-    runs = {arm: aggregate.for_arm(arm)[0] for arm in aggregate.arms if aggregate.for_arm(arm)}
+    runs = {arm: aggregate.primary(arm) for arm in aggregate.arms}
     for required in (BASE_ARM, FINETUNE_ARM, RETRIEVAL_ARM):
         if required not in runs:
             raise KeyError(f"no committed run for {required!r}; cannot stratify the demo")
@@ -168,7 +168,7 @@ def arm_summaries(aggregate: Aggregate) -> list[dict[str, Any]]:
     """Headline metrics per arm, straight from the run JSONs."""
     summaries = []
     for name in sorted(aggregate.arms, key=lambda n: _ARM_ORDER.get(n, len(_ARM_ORDER))):
-        run = aggregate.for_arm(name)[0]
+        run = aggregate.primary(name)
         arm = ARMS_BY_NAME.get(name)
         summaries.append(
             {
@@ -198,7 +198,7 @@ def build_payload(
 ) -> dict[str, Any]:
     """The complete ``responses.json`` the Space reads."""
     aggregate.assert_same_split()
-    reference = aggregate.runs[0]
+    reference = aggregate.primary(aggregate.arms[0])
     items = select_items(aggregate, questions, per_bucket=per_bucket, seed=seed)
     return {
         "schema_version": 1,

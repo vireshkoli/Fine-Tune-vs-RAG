@@ -54,7 +54,8 @@ carries discordant counts rather than only p-values — see §6.
 arm was trained on. Same base weights, same prompt, same information — the only
 difference is whether that information lives in an index or in the weights.
 
-**The index wins: +10.2 points versus +6.1 (p = 0.016 between them).**
+**The index wins: +10.2 points versus +6.1 (p = 0.016 between them at seed 42).**
+Across three training seeds the gap is **+4.2 points, 95% CI [+1.0, +7.2], p = 0.008** — see §7.5.
 
 This is the comparison the parity corpus exists to make, and a conventional
 four-arm design cannot produce it. With only `base`, `rag`, `qlora` and
@@ -380,9 +381,9 @@ fine-tuned arm, and it is reported here rather than omitted.
 
 ### Known limitations
 
-1. **Single seed.** Every result is seed 42. The headline comparisons are paired
-   within-seed, which is the stronger test, but training-seed variance for the
-   QLoRA arms is unmeasured. Two further seeds are budgeted at ~10 GPU-hours.
+1. ~~Single seed.~~ **Resolved** (§7.5). Three training seeds: `qlora` scores
+   62.8 ± 1.1, and the headline holds across all three at +4.2 points, 95% CI [+1.0, +7.2], p = 0.008.
+   The untrained arms have no training seed to vary.
 2. **Contamination is present but bounded** (§5.5). ~9% of test stems are
    reproduced verbatim above a chance baseline, so some absolute accuracy is
    recall. The permutation probe shows the base model does *not* use memorised
@@ -394,10 +395,13 @@ fine-tuned arm, and it is reported here rather than omitted.
    (§2.2). External was rebuilt at exactly 217,661 chunks and re-run: the gap
    grew from +10.3 to +16.4 points, so the effect is corpus content, not corpus
    size, and the original figure understated it.
-4. **No free-text evaluation.** All results are 4-option MCQ scored by
-   constrained log-prob. An LLM-judged free-text arm is designed but unrun.
-5. **One epoch, one LoRA rank.** Hyperparameters were chosen from measurement
-   (§7) rather than swept; the ablation grid is not yet run.
+4. **No free-text evaluation yet.** All results are 4-option MCQ scored by
+   constrained log-prob. The LLM-judged free-text arm is built — rubric, judge
+   client, generation script — but has not been run.
+5. ~~One epoch, one LoRA rank.~~ **Swept** (§7.5): rank {8, 16, 32, 64} and
+   epochs {1, 2, 3}. Validation loss favours higher rank; test accuracy is flat
+   across rank and declines with epochs, all within training-seed noise. These
+   ablations are single-seed and are read against the measured seed spread.
 
 ---
 
@@ -548,6 +552,89 @@ these questions, which is the only route by which an embedder could have
 helped. "Medical" is not one distribution: an encoder tuned on clinical and
 literature text was not tuned on exam explanations, and the general-purpose
 encoder it was built from is at least as good here. The control stands.
+
+### Training seeds: the headline is not a lucky draw
+
+Every trained arm was retrained at seeds 1 and 2 and re-evaluated on the same
+frozen test set. The untrained arms have no training seed, so they are not
+replicated. Every table in this report still reports seed 42; the replicates
+feed a separate seeds column rather than being averaged into a cell next to a
+single-seed confidence interval.
+
+| Arm | Seed 42 | Seed 1 | Seed 2 | Mean ± SD |
+| --- | ---: | ---: | ---: | ---: |
+| `qlora` | 62.9% | 63.9% | 61.7% | 62.8 ± 1.1 |
+| `qlora-rag` | 61.4% | 62.8% | 62.6% | 62.3 ± 0.8 |
+| `qlora-rag-parity` | 71.1% | 72.6% | 71.4% | 71.7 ± 0.8 |
+
+Every seed of every trained arm beats `base` significantly (all p ≤ 0.004).
+
+The comparison this study exists for — the index against the weights — at each
+training seed:
+
+| `qlora` seed | `rag-parity` − `qlora` | Discordant | p |
+| --- | ---: | :---: | ---: |
+| 42 | +4.1 | 158/117 | 0.016 |
+| 1 | +3.1 | 157/126 | 0.075 |
+| 2 | +5.3 | 168/115 | 0.002 |
+
+The same direction at every seed, significant individually at two of three.
+Combining those three p-values would be wrong: the tests share one `rag-parity`
+run and the same 1,000 items, so they are not independent. Instead, each item
+contributes the difference between `rag-parity`'s correctness and `qlora`'s
+*mean* correctness across its three seeds, tested by sign-flip permutation over
+items (200,000 resamples). That uses every seed and respects the pairing:
+
+**+4.2 points, 95% CI [+1.0, +7.2], p = 0.008.**
+
+The gap is 3.8× the training-seed standard deviation. The seed-42 figure of
++4.1 was representative, and the claim is stronger with replicates than it was
+without them. Validation loss agrees: 1.2015, 1.2005 and 1.2018 across the
+three seeds, a spread of 0.0013.
+
+Seed 1 was resumed from checkpoint-400 on a GPU shared with another tenant's
+idle process. That changes wall-clock, not the optimisation; its GPU-seconds are
+flagged as taken under contention and the cost model uses seed 42's.
+
+### LoRA rank and epochs: validation loss moved, accuracy did not
+
+| Config | Best val loss | Test accuracy | vs control | p | Train GPU-h |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| r=8 | 1.2060 | 63.0% | +0.1 | 1.00 | 5.2 |
+| **r=16 (control)** | 1.2015 | 62.9% | — | — | 5.1 |
+| r=32 | 1.1956 | 63.0% | +0.1 | 1.00 | 5.1 |
+| r=64 | **1.1926** | 63.2% | +0.3 | 0.84 | 4.9 |
+| 2 epochs | 1.1987 | 62.4% | -0.5 | 0.68 | 9.2 |
+| 3 epochs | 1.2014 | 61.6% | -1.3 | 0.25 | 15.6 |
+
+Single seed each. GPU-hours for runs on a shared card are wall-clock and
+overstate their cost slightly.
+
+**Rank.** Validation loss falls monotonically with rank, by 0.013 nats from r=8
+to r=64. Test accuracy does not follow: every rank lands within 0.3 points of
+the control, far inside the 1.1-point training-seed spread measured above. A
+single-seed difference smaller than one seed-SD is not evidence of anything,
+and none of these is larger. The likely reason loss and accuracy disagree is
+the training target: the answer letter followed by its explanation, a mean of
+452 characters. Validation loss is therefore dominated by how well the adapter
+reproduces explanation text, while accuracy is scored on one letter. A
+higher-rank adapter models explanations better without choosing answers better.
+
+So r=16 is not the minimum-loss configuration, and this report says so — but it
+is not beaten on the metric the benchmark reports, and rank costs nothing at
+serving time once the adapter is merged. There is no quality or efficiency case
+for changing it.
+
+**Epochs.** Accuracy falls with each extra pass — 62.9, 62.4, 61.6 — while
+training cost rises to 1.8× and 3.1×. Neither drop is significant, but the
+direction is monotone and validation loss shows the same shape: two epochs dip
+slightly, three return to the one-epoch level, the overfitting signature.
+
+Be precise about what this sweep tests. It adds passes over the *same* 30,000
+rows. It does not compare one pass over 30,000 rows against two passes over
+15,000 at equal compute, which is the stronger claim the training config makes.
+The narrower finding is the useful one anyway: more passes over this data bought
+nothing, at up to three times the training cost.
 
 ## 8. A decision framework
 

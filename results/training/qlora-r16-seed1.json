@@ -1,0 +1,24 @@
+{
+  "output_dir": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/qlora-r16-seed1",
+  "train_gpu_seconds": 10941.370992829092,
+  "final_step": 1875,
+  "train_loss": 0.7176020991007487,
+  "best_eval_loss": 1.200500726699829,
+  "resumed_from": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/qlora-r16-seed1/checkpoint-800",
+  "n_train": 30000,
+  "n_eval": 500,
+  "trainable_params": 43646976,
+  "total_params": 4761498624,
+  "trainable_pct": 0.9166646773770022,
+  "device_occupancy": {
+    "device": 0,
+    "total_used_mib": 8807,
+    "foreign_pids": [
+      99001
+    ],
+    "foreign_mib": 8798,
+    "exclusive": false
+  },
+  "memory_cap_gib": 24.0,
+  "peak_memory_gib": 12.557468891143799
+}

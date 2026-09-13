@@ -26,27 +26,34 @@ def _fmt_pct(value: float) -> str:
 def results_table(aggregate: Aggregate, *, headline_only: bool = False) -> str:
     """The main results table."""
     rows = [
-        "| Arm | Accuracy | 95% CI | p50 | p95 | Prompt tokens | Retrieval hit | Grounded |",
-        "| --- | ---: | :---: | ---: | ---: | ---: | ---: | ---: |",
+        "| Arm | Accuracy | 95% CI | Seeds (mean ± SD) | p50 | p95 | Prompt tokens "
+        "| Retrieval hit | Grounded |",
+        "| --- | ---: | :---: | :---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for arm_name in aggregate.arms:
         arm = ARMS_BY_NAME.get(arm_name)
         if headline_only and arm is not None and not arm.headline:
             continue
-        runs = aggregate.for_arm(arm_name)
-        run = runs[0]
-        mean, sd = aggregate.seed_summary(arm_name)
+        # Every cell in a row comes from one run — the reference seed — so the
+        # accuracy, its CI, the latency and the paired tests all describe the
+        # same model. Replicates appear only in the seeds column; putting a
+        # cross-seed mean next to a single-seed CI would mix two things.
+        run = aggregate.primary(arm_name)
         low, high = run.ci
-        accuracy = f"{_fmt_pct(mean)}%"
-        if len(runs) > 1:
-            accuracy += f" ± {_fmt_pct(sd)}"
+        accuracy = f"{_fmt_pct(run.accuracy)}%"
+        seeds = aggregate.seeds(arm_name)
+        if len(seeds) > 1:
+            mean, sd = aggregate.seed_summary(arm_name)
+            spread = f"{_fmt_pct(mean)} ± {_fmt_pct(sd)} (n={len(seeds)})"
+        else:
+            spread = "—"
         grounding = run.groundedness or {}
         hit = grounding.get("retrieval_hit_rate")
         grounded = grounding.get("grounded_rate")
         flag = "" if run.exclusive_device else CONTENDED
         rows.append(
             f"| `{arm_name}`{flag} | **{accuracy}** | [{_fmt_pct(low)}, {_fmt_pct(high)}] | "
-            f"{run.p50_ms:.0f} ms | {run.p95_ms:.0f} ms | {run.mean_prompt_tokens:.0f} | "
+            f"{spread} | {run.p50_ms:.0f} ms | {run.p95_ms:.0f} ms | {run.mean_prompt_tokens:.0f} | "
             f"{'—' if hit is None else f'{hit:.3f}'} | "
             f"{'—' if grounded is None else f'{grounded:.3f}'} |"
         )
@@ -83,7 +90,7 @@ def per_subject_table(aggregate: Aggregate, *, min_items: int = 30) -> str:
     percentages that look precise and mean nothing.
     """
     arms = aggregate.arms
-    by_arm = {a: (aggregate.for_arm(a)[0].payload.get("per_subject") or {}) for a in arms}
+    by_arm = {a: (aggregate.primary(a).payload.get("per_subject") or {}) for a in arms}
     subjects = sorted(
         {s for stats in by_arm.values() for s, v in stats.items() if v.get("n", 0) >= min_items}
     )
@@ -117,11 +124,13 @@ def provenance_note(aggregate: Aggregate) -> str:
     """One line tying the tables to the exact data and code that produced them."""
     hashes = aggregate.split_hashes()
     digest = next(iter(hashes)) if len(hashes) == 1 else "MIXED"
-    run = aggregate.runs[0] if aggregate.runs else None
+    run = aggregate.primary(aggregate.arms[0]) if aggregate.runs else None
     env = (run.payload.get("environment") or {}) if run else {}
     n_items = run.payload.get("n_items") if run else "?"
     return (
         f"Generated from `results/runs/` by `make report`. "
+        f"Reported runs use training seed {aggregate.reference_seed}; other seeds feed the "
+        f"seed column only. "
         f"Test split `{digest[:16]}…` (n={n_items}), "
         f"git `{str(env.get('git_sha', '?'))[:12]}`, "
         f"{env.get('gpu', 'unknown GPU')}, torch {env.get('torch', '?')}."

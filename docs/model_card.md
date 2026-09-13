@@ -77,7 +77,8 @@ labels are withheld — so it cannot be used for evaluation.)
 
 **The headline finding is not flattering to this adapter.** Retrieving the same
 training explanations at inference time scores **higher** (67.0%) than absorbing
-them into these weights (62.9%), and the difference is significant (p = 0.016).
+them into these weights (62.9%), and the gap holds across three training seeds
+(+4.2 points, 95% CI [+1.0, +7.2], p = 0.008).
 Same base model, same prompt, same information — one in an index, one in the
 weights, and the index wins.
 
@@ -130,8 +131,11 @@ retrieval arm serves.
    which is what the benchmark exists to measure. Absolute accuracy is inflated;
    the deltas are not. Full detail in
    [REPORT.md](https://github.com/vireshkoli/Fine-Tune-vs-RAG/blob/main/REPORT.md#55-contamination-measured-not-assumed).
-2. **Single seed.** All results are seed 42. Training-seed variance is
-   unmeasured.
+2. **Three training seeds, reported at one.** Every table reports seed 42.
+   Retrained at seeds 1 and 2, this recipe scores 62.9%, 63.9% and 61.7%
+   (62.8 ± 1.1). Differences between configurations smaller than that spread —
+   including every LoRA-rank and epoch ablation in the repository — are not
+   evidence of anything.
 3. **Narrow evaluation.** 4-option multiple choice only, scored by constrained
    log-probability. No free-text generation, no citation, no calibration
    assessment beyond confidence margins.
