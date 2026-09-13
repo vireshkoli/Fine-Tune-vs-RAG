@@ -31,6 +31,7 @@ from __future__ import annotations
 import re
 import statistics
 from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -342,3 +343,77 @@ class ArmJudgement:
             "unparseable_replies": self.unparseable,
             "rubric_version": RUBRIC_VERSION,
         }
+
+
+#: ``(item_id, question, reference, candidate)``.
+PointwiseItem = tuple[str, str, str, str]
+#: ``(item_id, question, reference, arm_a, answer_a, arm_b, answer_b)``.
+PairwiseItem = tuple[str, str, str, str, str, str, str]
+
+
+def score_many(
+    items: Sequence[PointwiseItem],
+    judge: JudgeFn,
+    *,
+    seeds: Sequence[int] = (0, 1, 2),
+    workers: int = 1,
+    progress: Callable[[], None] | None = None,
+) -> list[PointwiseResult]:
+    """:func:`score_pointwise` over many items, concurrently, in input order.
+
+    A served judge batches concurrent requests. Issuing thousands of them one at
+    a time leaves most of the GPU idle between calls — for this project's 5,400
+    pointwise calls that is the difference between roughly two hours and fifteen
+    minutes on a shared machine. Results come back in *input* order regardless
+    of completion order, so item ids and scores can never be paired wrongly.
+    """
+    if workers <= 1:
+        results: list[PointwiseResult] = []
+        for item in items:
+            results.append(score_pointwise(*item, judge, seeds=seeds))
+            if progress is not None:
+                progress()
+        return results
+
+    slots: list[PointwiseResult | None] = [None] * len(items)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(score_pointwise, *item, judge, seeds=seeds): index
+            for index, item in enumerate(items)
+        }
+        for future in as_completed(futures):
+            slots[futures[future]] = future.result()  # re-raises a worker's failure
+            if progress is not None:
+                progress()
+    return [slot for slot in slots if slot is not None]
+
+
+def compare_many(
+    items: Sequence[PairwiseItem],
+    judge: JudgeFn,
+    *,
+    seed: int = 0,
+    workers: int = 1,
+    progress: Callable[[], None] | None = None,
+) -> list[PairwiseResult]:
+    """:func:`compare_pairwise` over many items, concurrently, in input order."""
+
+    def run(item: PairwiseItem) -> PairwiseResult:
+        return compare_pairwise(*item, judge, seed=seed)
+
+    if workers <= 1:
+        results: list[PairwiseResult] = []
+        for item in items:
+            results.append(run(item))
+            if progress is not None:
+                progress()
+        return results
+
+    slots: list[PairwiseResult | None] = [None] * len(items)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(run, item): index for index, item in enumerate(items)}
+        for future in as_completed(futures):
+            slots[futures[future]] = future.result()
+            if progress is not None:
+                progress()
+    return [slot for slot in slots if slot is not None]
