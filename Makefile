@@ -104,7 +104,8 @@ matrix-run:  ## Run the pending grid; waits for an exclusive GPU (GROUP=rank for
 
 judge-server:  ## Print the command to serve the LLM judge (run it in its own venv)
 	@$(PY) python -c "from fvr.eval.judge_client import load_judge_config, server_command; \
-		print(server_command(load_judge_config('configs/eval/judge.yaml')))"
+		print(server_command(load_judge_config('configs/eval/judge.yaml'), \
+		vllm_bin='.artifacts/judge-venv/bin/vllm', hf_home='.artifacts/hub'))"
 	@echo
 	@echo "Run that in a SEPARATE virtualenv with vllm installed. It is deliberately"
 	@echo "not installed here: vllm pins torch, this project pins torch 2.11.0+cu128"

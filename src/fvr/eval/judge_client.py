@@ -25,6 +25,7 @@ memory that outlives its parent is how a shared machine gets wedged.
 from __future__ import annotations
 
 import json
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -109,6 +110,10 @@ class HttpJudge:
     #: recording next to the results rather than estimating afterwards.
     calls: int = 0
 
+    def __post_init__(self) -> None:
+        # Judging runs across a thread pool; an unguarded `+=` drops counts.
+        self._lock = threading.Lock()
+
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
         url = f"{self.config.base_url.rstrip('/')}/chat/completions"
         if self.transport is not None:
@@ -133,7 +138,8 @@ class HttpJudge:
                 last = exc
                 time.sleep(self.config.backoff_s * (2**attempt))
                 continue
-            self.calls += 1
+            with self._lock:
+                self.calls += 1
             return extract_reply(response)
 
         raise JudgeUnavailableError(
@@ -159,16 +165,33 @@ def extract_reply(response: dict[str, Any]) -> str:
     return str(content)
 
 
-def server_command(config: JudgeConfig, *, device: int = 1, port: int = 8000) -> str:
+def server_command(
+    config: JudgeConfig,
+    *,
+    device: int = 1,
+    port: int = 8000,
+    vllm_bin: str = "vllm",
+    hf_home: str | None = None,
+) -> str:
     """The exact command to serve this judge.
 
     Printed rather than executed. A subprocess holding 37 GiB of GPU memory that
     outlives its parent is how a shared machine gets wedged, so starting and
-    stopping it stays a human decision.
+    stopping it stays a deliberate step.
+
+    ``hf_home`` points vLLM at the project's artifact tree, where the pinned
+    snapshot was downloaded, and turns the Hub off: the weights are already on
+    disk, and on a flaky connection a revision check at start-up is a way for the
+    server to fail for no reason. The tokenizer is pinned to the same revision as
+    the weights, since vLLM otherwise resolves it separately.
     """
+    env = f"CUDA_VISIBLE_DEVICES={device}"
+    if hf_home is not None:
+        env += f" HF_HOME={hf_home} HF_HUB_OFFLINE=1"
     return (
-        f"CUDA_VISIBLE_DEVICES={device} vllm serve {config.repo_id} "
-        f"--revision {config.revision} "
+        f"{env} {vllm_bin} serve {config.repo_id} "
+        f"--revision {config.revision} --tokenizer-revision {config.revision} "
+        f"--served-model-name {config.repo_id} "
         f"--port {port} --max-model-len 4096 --gpu-memory-utilization 0.90 "
-        "--quantization awq_marlin"
+        "--max-num-seqs 32 --quantization awq_marlin"
     )

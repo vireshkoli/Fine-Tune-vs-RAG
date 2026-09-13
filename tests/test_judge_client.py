@@ -174,3 +174,24 @@ class TestShippedConfig:
         command = server_command(config, device=1)
         assert config.revision in command
         assert "CUDA_VISIBLE_DEVICES=1" in command
+
+
+class TestConcurrencyAndServing:
+    def test_call_count_is_exact_under_threads(self) -> None:
+        from concurrent.futures import ThreadPoolExecutor
+
+        judge = HttpJudge(a_config(), transport=lambda _u, _p: reply("SCORE: 2"))
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            list(pool.map(lambda s: judge([], s), range(400)))
+        assert judge.calls == 400
+
+    def test_project_scoped_command_is_offline_and_fully_pinned(self) -> None:
+        config = load_judge_config(PROJECT_ROOT / "configs" / "eval" / "judge.yaml")
+        command = server_command(
+            config, device=0, vllm_bin=".artifacts/judge-venv/bin/vllm", hf_home=".artifacts/hub"
+        )
+        assert "HF_HOME=.artifacts/hub" in command
+        assert "HF_HUB_OFFLINE=1" in command, "a revision check at start-up can fail offline"
+        assert f"--tokenizer-revision {config.revision}" in command
+        assert command.count(config.revision) == 2
+        assert ".artifacts/judge-venv/bin/vllm serve" in command

@@ -22,9 +22,11 @@ from fvr.eval.judge import (
     PairwiseResult,
     UnparseableVerdictError,
     cohens_kappa,
+    compare_many,
     compare_pairwise,
     parse_score,
     parse_verdict,
+    score_many,
     score_pointwise,
     summarise_pairwise,
 )
@@ -299,3 +301,43 @@ class TestSeedsReachTheJudge:
 
         compare_pairwise("q", "Q?", "r", "a", "A", "b", "B", judge, seed=7)
         assert seen == [7, 7]
+
+
+class TestConcurrentJudging:
+    """Thousands of calls go to a served judge in parallel; order must survive."""
+
+    @staticmethod
+    def slow_judge(messages: list[dict[str, str]], seed: int) -> str:
+        import time
+
+        content = messages[1]["content"]
+        # Later items finish *first*, so completion order is the reverse of input.
+        item = int(content.split("CANDIDATE:")[1].split()[0])
+        time.sleep(0.001 * (20 - item))
+        return f"SCORE: {(item + seed) % 3}"
+
+    def items(self) -> list[tuple[str, str, str, str]]:
+        return [(f"q{i}", "Question?", "ref", f"{i} answer") for i in range(20)]
+
+    def test_results_come_back_in_input_order(self) -> None:
+        results = score_many(self.items(), self.slow_judge, seeds=(0,), workers=8)
+        assert [r.item_id for r in results] == [f"q{i}" for i in range(20)]
+        assert [r.scores[0] for r in results] == [i % 3 for i in range(20)]
+
+    def test_concurrent_equals_sequential(self) -> None:
+        serial = score_many(self.items(), self.slow_judge, seeds=(0, 1, 2), workers=1)
+        pooled = score_many(self.items(), self.slow_judge, seeds=(0, 1, 2), workers=8)
+        assert [r.scores for r in serial] == [r.scores for r in pooled]
+
+    def test_a_failing_call_is_not_swallowed(self) -> None:
+        def broken(_messages: list[dict[str, str]], _seed: int) -> str:
+            raise RuntimeError("judge down")
+
+        with pytest.raises(RuntimeError, match="judge down"):
+            score_many(self.items(), broken, workers=4)
+
+    def test_pairwise_many_keeps_order_and_both_orderings(self) -> None:
+        items = [(f"q{i}", "Q?", "ref", "a", "A", "b", "B") for i in range(12)]
+        results = compare_many(items, always("VERDICT: TIE"), workers=4)
+        assert [r.item_id for r in results] == [f"q{i}" for i in range(12)]
+        assert all(not r.inconsistent for r in results)
