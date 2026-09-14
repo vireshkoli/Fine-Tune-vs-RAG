@@ -56,7 +56,11 @@ Verdict = Literal["A", "B", "TIE"]
 MAX_POINTWISE = 2
 
 _SCORE = re.compile(r"SCORE\s*:\s*([0-2])", re.IGNORECASE)
-_VERDICT = re.compile(r"VERDICT\s*:\s*(A|B|TIE)", re.IGNORECASE)
+#: "Neither" and "Both" are the judge saying the answers fail or succeed equally
+#: — which the rubric defines as TIE. Seen live: "VERDICT: Neither A nor B, the
+#: correct answer is not provided". A bare A/B must be a whole word, so
+#: "VERDICT: Answer B" does not read as A.
+_VERDICT = re.compile(r"VERDICT\s*:\s*(TIE|NEITHER|BOTH|A|B)\b", re.IGNORECASE)
 
 
 class UnparseableVerdictError(Exception):
@@ -83,7 +87,9 @@ def parse_verdict(reply: str) -> Verdict:
     if match is None:
         raise UnparseableVerdictError(f"no VERDICT line in judge reply: {reply[:200]!r}")
     verdict = match.group(1).upper()
-    return "TIE" if verdict == "TIE" else ("A" if verdict == "A" else "B")
+    if verdict in {"TIE", "NEITHER", "BOTH"}:
+        return "TIE"
+    return "A" if verdict == "A" else "B"
 
 
 @dataclass(frozen=True)
@@ -153,10 +159,14 @@ class PairwiseResult:
     forward: Verdict
     reversed_: Verdict
     inconsistent: bool
+    #: The judge went off-format in one or both orderings. Kept separate from a
+    #: tie and from an order flip: a parse failure is a fact about the judge's
+    #: formatting, not about the answers, and one must not abort 3,000 calls.
+    unparseable: bool = False
 
     @property
     def winner(self) -> str | None:
-        if self.inconsistent or self.forward == "TIE":
+        if self.unparseable or self.inconsistent or self.forward == "TIE":
             return None
         return self.arm_a if self.forward == "A" else self.arm_b
 
@@ -184,13 +194,30 @@ def compare_pairwise(
     # Both orderings use the *same* seed. Varying it as well would confound
     # position bias with sampling noise, and position bias is the thing being
     # measured here.
-    forward = parse_verdict(
-        judge(build_pairwise_prompt(question, reference, answer_a, answer_b).as_messages(), seed)
-    )
-    backward_raw = parse_verdict(
-        judge(build_pairwise_prompt(question, reference, answer_b, answer_a).as_messages(), seed)
-    )
-    backward = _flip(backward_raw)
+    try:
+        forward = parse_verdict(
+            judge(
+                build_pairwise_prompt(question, reference, answer_a, answer_b).as_messages(), seed
+            )
+        )
+        backward = _flip(
+            parse_verdict(
+                judge(
+                    build_pairwise_prompt(question, reference, answer_b, answer_a).as_messages(),
+                    seed,
+                )
+            )
+        )
+    except UnparseableVerdictError:
+        return PairwiseResult(
+            item_id=item_id,
+            arm_a=arm_a,
+            arm_b=arm_b,
+            forward="TIE",
+            reversed_="TIE",
+            inconsistent=False,
+            unparseable=True,
+        )
     return PairwiseResult(
         item_id=item_id,
         arm_a=arm_a,
@@ -211,10 +238,11 @@ class PairwiseSummary:
     b_wins: int = 0
     ties: int = 0
     inconsistent: int = 0
+    unparseable: int = 0
 
     @property
     def n(self) -> int:
-        return self.a_wins + self.b_wins + self.ties + self.inconsistent
+        return self.a_wins + self.b_wins + self.ties + self.inconsistent + self.unparseable
 
     @property
     def position_bias_rate(self) -> float:
@@ -235,6 +263,7 @@ class PairwiseSummary:
             "b_wins": self.b_wins,
             "ties": self.ties,
             "inconsistent": self.inconsistent,
+            "unparseable": self.unparseable,
             "position_bias_rate": round(self.position_bias_rate, 4),
             "rubric_version": RUBRIC_VERSION,
         }
@@ -245,7 +274,9 @@ def summarise_pairwise(results: Sequence[PairwiseResult]) -> PairwiseSummary:
         raise ValueError("no pairwise results to summarise")
     summary = PairwiseSummary(arm_a=results[0].arm_a, arm_b=results[0].arm_b)
     for result in results:
-        if result.inconsistent:
+        if result.unparseable:
+            summary.unparseable += 1
+        elif result.inconsistent:
             summary.inconsistent += 1
         elif result.forward == "TIE":
             summary.ties += 1

@@ -79,7 +79,14 @@ class TestParsing:
 
     @pytest.mark.parametrize(
         ("reply", "expected"),
-        [("VERDICT: A", "A"), ("VERDICT: B", "B"), ("verdict: tie", "TIE")],
+        [
+            ("VERDICT: A", "A"),
+            ("VERDICT: B", "B"),
+            ("verdict: tie", "TIE"),
+            # Seen live. The rubric defines "both fail equally" as TIE.
+            ("VERDICT: Neither A nor B, the correct answer is not provided,", "TIE"),
+            ("VERDICT: Both agree equally", "TIE"),
+        ],
     )
     def test_reads_a_verdict(self, reply: str, expected: str) -> None:
         assert parse_verdict(reply) == expected
@@ -341,3 +348,27 @@ class TestConcurrentJudging:
         results = compare_many(items, always("VERDICT: TIE"), workers=4)
         assert [r.item_id for r in results] == [f"q{i}" for i in range(12)]
         assert all(not r.inconsistent for r in results)
+
+
+class TestPairwiseUnparseable:
+    def test_an_off_format_reply_is_recorded_not_raised(self) -> None:
+        """One bad reply must not abort a 3,000-call run."""
+        result = compare_pairwise(
+            "q1", "Q?", "ref", "a", "A", "b", "B", scripted(["VERDICT: A", "I cannot decide."])
+        )
+        assert result.unparseable
+        assert result.winner is None
+
+    def test_unparseable_is_counted_apart_from_ties_and_flips(self) -> None:
+        results = [
+            PairwiseResult("1", "a", "b", "TIE", "TIE", False, unparseable=True),
+            PairwiseResult("2", "a", "b", "TIE", "TIE", False),
+            PairwiseResult("3", "a", "b", "A", "B", True),
+        ]
+        summary = summarise_pairwise(results)
+        assert (summary.unparseable, summary.ties, summary.inconsistent) == (1, 1, 1)
+        assert summary.as_json()["unparseable"] == 1
+
+    def test_a_bare_letter_must_be_a_whole_word(self) -> None:
+        assert parse_verdict("VERDICT: B") == "B"
+        assert parse_verdict("VERDICT: A.") == "A"
