@@ -187,6 +187,40 @@ class RunNaming:
     def glob(self) -> str:
         return "miriad-*.json" if self.dataset == "miriad" else f"*_seed{self.seed}.json"
 
+    def pairwise_stem(self, arm_a: str, arm_b: str) -> str:
+        stem = f"pairwise_{arm_a}__{arm_b}"
+        return stem if self.dataset == "miriad" else f"{stem}_seed{self.seed}"
+
+
+#: The comparisons worth a pairwise judgement, each run in both orders. Pairwise
+#: is more sensitive than pointwise for close calls, and these are the calls the
+#: benchmark exists to make.
+HEADLINE_PAIRS: tuple[tuple[str, str], ...] = (
+    ("rag-parity", "qlora"),  # the headline: the index against the weights
+    ("qlora-rag-parity", "rag-parity"),  # do the two compose
+    ("qlora", "base"),  # what fine-tuning buys
+    ("rag-parity", "base"),  # what retrieval buys
+    ("rag-external", "base"),  # retrieval over the wrong corpus
+)
+
+#: The MIRIAD parity pairs. Both adapters saw exactly the passages the index
+#: holds, so "index vs weights" is asked twice — once against weights trained
+#: on QA pairs from those passages, once on the raw passages.
+MIRIAD_PAIRS: tuple[tuple[str, str], ...] = (
+    ("miriad-rag", "miriad-qlora-qa"),  # index vs weights, QA-trained
+    ("miriad-rag", "miriad-qlora-doc"),  # index vs weights, passage-trained
+    ("miriad-qlora-qa", "miriad-base"),  # what QA fine-tuning buys
+    ("miriad-qlora-doc", "miriad-base"),  # what passage fine-tuning buys
+    ("miriad-rag", "miriad-base"),  # what the index buys
+    ("miriad-qlora-qa-rag", "miriad-rag"),  # do weights add to the index
+    ("miriad-qlora-doc-rag", "miriad-rag"),
+)
+
+PAIRS_BY_DATASET: dict[str, tuple[tuple[str, str], ...]] = {
+    "medmcqa": HEADLINE_PAIRS,
+    "miriad": MIRIAD_PAIRS,
+}
+
 
 @dataclass
 class FreeTextRun:

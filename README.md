@@ -54,7 +54,7 @@ the technique.**
 
 **3. Fine-tuning's MCQ gain reverses when the model must *produce* the
 answer.** Asked open-ended and graded by a 70B judge, `qlora` scores **5.8
-points below its own base** (p = 0.022) where it gained +6.1 on multiple
+points below its own base** (p = 0.024) where it gained +6.1 on multiple
 choice; retrieval's +10.2 transfers almost intact (+9.3). The adapter learned to
 pick among candidates, not the facts to generate one — the index carries
 knowledge, the weights carried a format. Position bias controlled by judging

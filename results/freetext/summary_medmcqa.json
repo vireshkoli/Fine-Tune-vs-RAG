@@ -1,0 +1,204 @@
+{
+  "dataset": "medmcqa",
+  "seed": 42,
+  "stat_seed": 0,
+  "arms": {
+    "base": {
+      "n": 300,
+      "mean_score": 0.4539,
+      "ci95": [
+        0.4033,
+        0.505
+      ],
+      "judge_sd": 0.0115,
+      "unparseable": 0,
+      "max_new_tokens": null,
+      "capped_answers": null,
+      "mcq_accuracy": 0.568
+    },
+    "qlora-rag-parity": {
+      "n": 300,
+      "mean_score": 0.4989,
+      "ci95": [
+        0.4461,
+        0.5522
+      ],
+      "judge_sd": 0.0019,
+      "unparseable": 0,
+      "max_new_tokens": null,
+      "capped_answers": null,
+      "mcq_accuracy": 0.711
+    },
+    "qlora-rag": {
+      "n": 300,
+      "mean_score": 0.3967,
+      "ci95": [
+        0.345,
+        0.4494
+      ],
+      "judge_sd": 0.0038,
+      "unparseable": 0,
+      "max_new_tokens": null,
+      "capped_answers": null,
+      "mcq_accuracy": 0.614
+    },
+    "qlora": {
+      "n": 300,
+      "mean_score": 0.3956,
+      "ci95": [
+        0.3444,
+        0.4472
+      ],
+      "judge_sd": 0.0038,
+      "unparseable": 0,
+      "max_new_tokens": null,
+      "capped_answers": null,
+      "mcq_accuracy": 0.629
+    },
+    "rag-external": {
+      "n": 300,
+      "mean_score": 0.4156,
+      "ci95": [
+        0.365,
+        0.4672
+      ],
+      "judge_sd": 0.0115,
+      "unparseable": 0,
+      "max_new_tokens": null,
+      "capped_answers": null,
+      "mcq_accuracy": 0.567
+    },
+    "rag-parity": {
+      "n": 300,
+      "mean_score": 0.5472,
+      "ci95": [
+        0.495,
+        0.5994
+      ],
+      "judge_sd": 0.0038,
+      "unparseable": 0,
+      "max_new_tokens": null,
+      "capped_answers": null,
+      "mcq_accuracy": 0.67
+    }
+  },
+  "deltas": [
+    {
+      "arm_a": "rag-parity",
+      "arm_b": "qlora",
+      "n": 300,
+      "delta": 0.1517,
+      "ci95": [
+        0.0922,
+        0.2117
+      ],
+      "p_value": 4.999750012499375e-05,
+      "n_a_higher": 94,
+      "n_b_higher": 40,
+      "test": "sign-flip permutation on per-item score differences"
+    },
+    {
+      "arm_a": "qlora-rag-parity",
+      "arm_b": "rag-parity",
+      "n": 300,
+      "delta": -0.0483,
+      "ci95": [
+        -0.095,
+        -0.0017
+      ],
+      "p_value": 0.048397580120993954,
+      "n_a_higher": 29,
+      "n_b_higher": 51,
+      "test": "sign-flip permutation on per-item score differences"
+    },
+    {
+      "arm_a": "qlora",
+      "arm_b": "base",
+      "n": 300,
+      "delta": -0.0583,
+      "ci95": [
+        -0.1083,
+        -0.0083
+      ],
+      "p_value": 0.02359882005899705,
+      "n_a_higher": 38,
+      "n_b_higher": 68,
+      "test": "sign-flip permutation on per-item score differences"
+    },
+    {
+      "arm_a": "rag-parity",
+      "arm_b": "base",
+      "n": 300,
+      "delta": 0.0933,
+      "ci95": [
+        0.045,
+        0.1417
+      ],
+      "p_value": 0.00034998250087495624,
+      "n_a_higher": 66,
+      "n_b_higher": 33,
+      "test": "sign-flip permutation on per-item score differences"
+    },
+    {
+      "arm_a": "rag-external",
+      "arm_b": "base",
+      "n": 300,
+      "delta": -0.0383,
+      "ci95": [
+        -0.0872,
+        0.0111
+      ],
+      "p_value": 0.12939353032348383,
+      "n_a_higher": 47,
+      "n_b_higher": 64,
+      "test": "sign-flip permutation on per-item score differences"
+    }
+  ],
+  "pairwise": [
+    {
+      "arm_a": "rag-parity",
+      "arm_b": "qlora",
+      "a_wins": 110,
+      "b_wins": 37,
+      "ties": 58,
+      "inconsistent": 95,
+      "position_bias_rate": 0.3167
+    },
+    {
+      "arm_a": "qlora-rag-parity",
+      "arm_b": "rag-parity",
+      "a_wins": 33,
+      "b_wins": 63,
+      "ties": 102,
+      "inconsistent": 102,
+      "position_bias_rate": 0.34
+    },
+    {
+      "arm_a": "qlora",
+      "arm_b": "base",
+      "a_wins": 31,
+      "b_wins": 83,
+      "ties": 73,
+      "inconsistent": 113,
+      "position_bias_rate": 0.3767
+    },
+    {
+      "arm_a": "rag-parity",
+      "arm_b": "base",
+      "a_wins": 79,
+      "b_wins": 40,
+      "ties": 87,
+      "inconsistent": 94,
+      "position_bias_rate": 0.3133
+    },
+    {
+      "arm_a": "rag-external",
+      "arm_b": "base",
+      "a_wins": 36,
+      "b_wins": 60,
+      "ties": 98,
+      "inconsistent": 106,
+      "position_bias_rate": 0.3533
+    }
+  ]
+}
