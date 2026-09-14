@@ -148,6 +148,61 @@ Over the external corpus they do not compose: `qlora-rag` (61.4%) is *below*
 `qlora` alone (62.9%), though not significantly (p = 0.33). Injecting 625 tokens
 of irrelevant context is at best free and at worst mildly harmful.
 
+### 2.4 Fine-tuning's gain does not survive free text — it reverses
+
+Every number above is 4-option multiple choice scored by constrained
+log-probability. That measures whether a model can *rank four candidates*,
+which is narrower than whether it *knows the answer*: a model can eliminate
+three implausible options without being able to produce the fourth. So the
+same 300 test items were asked open-ended — options hidden from the prompt
+*and* from the retriever's query — and graded by an LLM judge against the gold
+option text.
+
+| Arm | Judge score (0–1) | MCQ accuracy |
+| --- | ---: | ---: |
+| `rag-parity` | **0.547** [0.50, 0.60] | 67.0% |
+| `qlora-rag-parity` | 0.499 [0.45, 0.55] | 71.1% |
+| `base` | 0.454 [0.40, 0.50] | 56.8% |
+| `rag-external` | 0.416 [0.37, 0.47] | 56.7% |
+| `qlora-rag` | 0.397 [0.34, 0.45] | 61.4% |
+| `qlora` | **0.396** [0.34, 0.45] | 62.9% |
+
+| Paired comparison | Free-text Δ | p (permutation) | MCQ Δ | Pairwise, both orders |
+| --- | ---: | ---: | ---: | :---: |
+| `rag-parity` − `base` | **+9.3** | 0.0004 | +10.2 | 79–40 |
+| `qlora` − `base` | **−5.8** | 0.022 | +6.1 | 31–83 |
+| `rag-parity` − `qlora` | **+15.2** | 5×10⁻⁵ | +4.1 | 110–37 |
+| `rag-external` − `base` | −3.8 | 0.13 | +0.1 | 36–60 |
+| `qlora-rag-parity` − `rag-parity` | −4.8 | 0.050 | +4.1 | 33–63 |
+
+**Retrieval's gain transferred to generation almost intact. Fine-tuning's
+reversed.** The adapter that gained +6.1 points on MCQ scores 5.8 points
+*below its own base model* when it has to produce the answer, and the gap
+between the index and the weights widens from 4 points to 15.
+
+Reading the items settles what happened. The fine-tune answers tersely and
+confidently wrong — "PT" for aPTT, "superior thyroid artery" for the
+thyrocervical trunk, "1.5%" for 3–5% — where the base model explains its way
+to the right answer. Length does not drive the verdict: the adapter's *correct*
+answers are its shortest. It learned the exam-answer register and the skill of
+picking among candidates, which MCQ rewards, without absorbing the facts
+needed to generate one. **The index carries knowledge; the weights carried a
+format.**
+
+The composition result reverses too: adding the adapter to retrieval, which
+gained +4.1 on MCQ, costs 4.8 under the judge. Retrieval over the wrong corpus
+stays a null in both.
+
+**How much to trust this.** One judge, a 70B Llama-3.3 cross-family from every
+arm, at three seeds. It is stable — within-item SD ≤ 0.011, zero unparseable
+replies in 5,400 — but stable is not the same as right, and the human-agreement
+κ on a 50-item sample is pending. The pairwise column is the position-bias
+control: every pair was judged in both orders and the **31–38% of pairs whose
+verdict flipped with order are excluded**, so a single-order pairwise would
+have been a third noise. Every pair keeps the pointwise direction. One of the
+300 items ("ref: Option 1 and 2") slipped past the option-dependence filter;
+it is identical for every arm and cannot move a paired direction.
+
 ---
 
 ## 3. What the arms are, and why six
@@ -395,9 +450,9 @@ fine-tuned arm, and it is reported here rather than omitted.
    (§2.2). External was rebuilt at exactly 217,661 chunks and re-run: the gap
    grew from +10.3 to +16.4 points, so the effect is corpus content, not corpus
    size, and the original figure understated it.
-4. **No free-text evaluation yet.** All results are 4-option MCQ scored by
-   constrained log-prob. The LLM-judged free-text arm is built — rubric, judge
-   client, generation script — but has not been run.
+4. ~~No free-text evaluation.~~ **Run** (§2.4), and it changes the reading of
+   the headline: fine-tuning's MCQ gain reverses under free-text judging.
+   Single judge; human-agreement κ pending.
 5. ~~One epoch, one LoRA rank.~~ **Swept** (§7.5): rank {8, 16, 32, 64} and
    epochs {1, 2, 3}. Validation loss favours higher rank; test accuracy is flat
    across rank and declines with epochs, all within training-seed noise. These

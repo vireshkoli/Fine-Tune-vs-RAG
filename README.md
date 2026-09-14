@@ -38,7 +38,7 @@ McNemar over identical items. Every table reports training seed 42; the trained
 arms were replicated at two further seeds — `qlora` 62.8 ± 1.1,
 `qlora-rag` 62.3 ± 0.8, `qlora-rag-parity` 71.7 ± 0.8.
 
-## The three findings
+## The four findings
 
 **1. On identical information, the index beat the weights.** `rag-parity`
 retrieves the same MedMCQA explanations the fine-tune trained on — same base
@@ -52,7 +52,15 @@ its retrieval *works*: it surfaces the gold answer in 45.4% of items. Lexical
 presence of an answer is not usable evidence. **The corpus mattered more than
 the technique.**
 
-**3. Fine-tuning repays its training cost at ~200,000 queries.** A *merged*
+**3. Fine-tuning's MCQ gain reverses when the model must *produce* the
+answer.** Asked open-ended and graded by a 70B judge, `qlora` scores **5.8
+points below its own base** (p = 0.022) where it gained +6.1 on multiple
+choice; retrieval's +10.2 transfers almost intact (+9.3). The adapter learned to
+pick among candidates, not the facts to generate one — the index carries
+knowledge, the weights carried a format. Position bias controlled by judging
+both orders; human κ pending.
+
+**4. Fine-tuning repays its training cost at ~200,000 queries.** A *merged*
 adapter has identical inference cost to the base (102 ms vs 103 ms), so
 fine-tuning's advantage is purely prompt length: 113 tokens versus 738.
 
@@ -179,7 +187,8 @@ deployment.
   +10.3 to +16.4 points, so the effect is corpus content, not size. That run
   also showed a thin wrong corpus scoring **6.2 points below no retrieval at
   all** (p<0.0001) — bad RAG is a regression, not a wash.
-- **No free-text evaluation**; all results are 4-option MCQ.
+- **Free-text results rest on one LLM judge.** Self-consistent (SD ≤ 0.011)
+  and cross-family from every arm, but the 50-item human κ is not yet done.
 
 Full methodology, per-subject breakdowns, error taxonomy and the decision
 framework: **[REPORT.md](REPORT.md)**.
