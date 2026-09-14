@@ -196,5 +196,8 @@ class TestConcurrencyAndServing:
         )
         assert "HF_HUB_OFFLINE=1" in command, "a revision check at start-up can fail offline"
         assert f"--tokenizer-revision {config.revision}" in command
+        assert "VLLM_CACHE_ROOT=.artifacts/vllm-cache" in command, (
+            "compile cache must stay in .artifacts"
+        )
         assert command.count(config.revision) == 2
         assert ".artifacts/judge-venv/bin/vllm serve" in command

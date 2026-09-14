@@ -192,10 +192,18 @@ def server_command(
         # subfolder. HF_HOME alone would send vLLM to .artifacts/hub/hub/ and it
         # would report the fully-downloaded judge as missing — which it did.
         env += f" HF_HOME={hf_home} HF_HUB_CACHE={hf_home} HF_HUB_OFFLINE=1"
+        # vLLM's torch.compile cache defaults to ~/.cache/vllm — outside the one
+        # directory teardown may delete, on a machine shared with other people's
+        # vLLM installs. Keep it beside the weights.
+        env += f" VLLM_CACHE_ROOT={Path(hf_home).parent / 'vllm-cache'}"
     return (
         f"{env} {vllm_bin} serve {config.repo_id} "
         f"--revision {config.revision} --tokenizer-revision {config.revision} "
         f"--served-model-name {config.repo_id} "
-        f"--port {port} --max-model-len 4096 --gpu-memory-utilization 0.90 "
-        "--max-num-seqs 32 --quantization awq_marlin"
+        # 2048, not 4096: the 38 GiB AWQ weights leave ~0.75 GiB of KV cache on a
+        # 46 GiB card at 0.90, and vLLM refuses to start unless one full-length
+        # request fits (4096 needs 1.25 GiB). Rubric prompts are ~500 tokens, so
+        # 2048 costs nothing; 0.95 buys back ~2 GiB of KV for concurrency.
+        f"--port {port} --max-model-len 2048 --gpu-memory-utilization 0.95 "
+        "--max-num-seqs 16 --quantization awq_marlin"
     )
