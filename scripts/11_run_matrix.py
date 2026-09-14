@@ -285,6 +285,7 @@ def main() -> int:
 
     state = MatrixState()
     failed: set[str] = set()
+    by_name = {job.name: job for job in build_matrix(paths)}
     log_dir = paths.artifacts / "logs"
     lock_dir = paths.artifacts / "locks"
 
@@ -294,6 +295,15 @@ def main() -> int:
             console.print(f"[yellow]{job.name}: skipped, depends on failed {blocked}[/]")
             state.results.append(JobResult(job.name, "skipped"))
             failed.add(job.name)
+            continue
+        # A dependency that has not been *built* yet (filtered out by --kind, or
+        # running on another GPU) is deferred, not failed: the job stays pending
+        # and a later run picks it up. Without this, an eval whose adapter is
+        # still training would launch, error on the missing path, and be
+        # recorded as a failure of the eval rather than an ordering fact.
+        unbuilt = [d for d in job.depends_on if not by_name[d].is_done()]
+        if unbuilt:
+            console.print(f"[dim]{job.name}: deferred, waiting on {unbuilt}[/]")
             continue
 
         # Re-checked at run time, not just at plan time: another runner may
