@@ -8,7 +8,9 @@
     uv run python scripts/13_judge_freetext.py --kappa   # judge vs your labels
 
 Reads ``results/freetext/<arm>_seed<N>.json`` and writes
-``results/freetext/judged/<arm>_seed<N>.json``.
+``results/freetext/judged/<arm>_seed<N>.json``. With ``--dataset miriad`` the
+runs are the tag-named ``results/freetext/miriad-*.json`` files instead, and
+``--pairwise`` judges the parity pairs rather than the MedMCQA headline pairs.
 
 Separate from generation on purpose: answers cost GPU-hours, judging does not
 re-run the model, so a rubric correction means re-judging rather than
@@ -30,6 +32,7 @@ from rich.console import Console
 from rich.progress import Progress
 from rich.table import Table
 
+from fvr.eval.freetext import RunNaming
 from fvr.eval.judge import (
     ArmJudgement,
     JudgeFn,
@@ -63,16 +66,33 @@ HEADLINE_PAIRS: tuple[tuple[str, str], ...] = (
     ("rag-external", "base"),  # retrieval over the wrong corpus
 )
 
+#: The MIRIAD parity pairs. Both adapters saw exactly the passages the index
+#: holds, so "index vs weights" is asked twice — once against weights trained
+#: on QA pairs from those passages, once on the raw passages.
+MIRIAD_PAIRS: tuple[tuple[str, str], ...] = (
+    ("miriad-rag", "miriad-qlora-qa"),  # index vs weights, QA-trained
+    ("miriad-rag", "miriad-qlora-doc"),  # index vs weights, passage-trained
+    ("miriad-qlora-qa", "miriad-base"),  # what QA fine-tuning buys
+    ("miriad-qlora-doc", "miriad-base"),  # what passage fine-tuning buys
+    ("miriad-rag", "miriad-base"),  # what the index buys
+    ("miriad-qlora-qa-rag", "miriad-rag"),  # do weights add to the index
+    ("miriad-qlora-doc-rag", "miriad-rag"),
+)
 
-def judged_path(results: Path, arm: str, seed: int) -> Path:
-    return results / "freetext" / "judged" / f"{arm}_seed{seed}.json"
+PAIRS_BY_DATASET = {"medmcqa": HEADLINE_PAIRS, "miriad": MIRIAD_PAIRS}
+
+
+def judged_path(results: Path, naming: RunNaming, arm: str) -> Path:
+    return results / "freetext" / "judged" / f"{naming.stem(arm)}.json"
 
 
 def judge_one_run(
-    run_path: Path, judge: JudgeFn, seeds: tuple[int, ...], workers: int
+    run_path: Path, label: str, judge: JudgeFn, seeds: tuple[int, ...], workers: int
 ) -> ArmJudgement:
     payload = json.loads(run_path.read_text(encoding="utf-8"))
-    judgement = ArmJudgement(arm=str(payload["arm"]))
+    # ``label`` rather than payload["arm"]: two MIRIAD runs share the arm
+    # "qlora" and differ only by adapter, so the judged file is named by tag.
+    judgement = ArmJudgement(arm=label)
     items = [
         (a["question_id"], a["question"], a["reference"], a["answer"]) for a in payload["answers"]
     ]
@@ -84,16 +104,24 @@ def judge_one_run(
     return judgement
 
 
-def judge_pairs(freetext: Path, seed: int, judge: JudgeFn, workers: int, *, force: bool) -> None:
-    """Pairwise judgements for the headline pairs, both orders, one file per pair."""
-    for arm_a, arm_b in HEADLINE_PAIRS:
-        out = freetext / "judged" / f"pairwise_{arm_a}__{arm_b}_seed{seed}.json"
+def pairwise_path(freetext: Path, naming: RunNaming, arm_a: str, arm_b: str) -> Path:
+    if naming.dataset == "miriad":
+        return freetext / "judged" / f"pairwise_{arm_a}__{arm_b}.json"
+    return freetext / "judged" / f"pairwise_{arm_a}__{arm_b}_seed{naming.seed}.json"
+
+
+def judge_pairs(
+    freetext: Path, naming: RunNaming, judge: JudgeFn, workers: int, *, force: bool
+) -> None:
+    """Pairwise judgements for the dataset's pairs, both orders, one file per pair."""
+    for arm_a, arm_b in PAIRS_BY_DATASET[naming.dataset]:
+        out = pairwise_path(freetext, naming, arm_a, arm_b)
         if out.is_file() and not force:
             console.print(f"  [dim]{arm_a} vs {arm_b}: already judged, skipping[/]")
             continue
         runs = {}
         for arm in (arm_a, arm_b):
-            path = freetext / f"{arm}_seed{seed}.json"
+            path = freetext / f"{naming.stem(arm)}.json"
             if not path.is_file():
                 console.print(f"  [yellow]{arm_a} vs {arm_b}: no generated run for {arm}[/]")
                 break
@@ -259,6 +287,12 @@ def main() -> int:
     parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
     parser.add_argument("--pairwise", action="store_true", help="judge the headline pairs")
     parser.add_argument(
+        "--dataset",
+        choices=sorted(PAIRS_BY_DATASET),
+        default="medmcqa",
+        help="which generated runs to judge: MedMCQA seed-named arms, or MIRIAD tag-named",
+    )
+    parser.add_argument(
         "--force", action="store_true", help="re-judge runs that already have a judged file"
     )
     args = parser.parse_args()
@@ -268,10 +302,11 @@ def main() -> int:
     seed = args.seed if args.seed is not None else project.seed
     judge_config = load_judge_config(args.config)
     freetext = paths.results / "freetext"
+    naming = RunNaming(args.dataset, seed)
 
     if args.kappa:
         sheet = freetext / "judged" / f"{args.kappa_arm}_kappa_sheet.csv"
-        judged_file = judged_path(paths.results, args.kappa_arm, seed)
+        judged_file = judged_path(paths.results, naming, args.kappa_arm)
         if not sheet.is_file() or not judged_file.is_file():
             console.print(f"[red]Need both {sheet} and {judged_file}. Judge an arm first.[/]")
             return 1
@@ -292,15 +327,15 @@ def main() -> int:
 
     if args.pairwise:
         try:
-            judge_pairs(freetext, seed, judge, args.workers, force=args.force)
+            judge_pairs(freetext, naming, judge, args.workers, force=args.force)
         except JudgeUnavailableError as exc:
             console.print(f"[red]{exc}[/]")
             return 1
         return 0
 
-    runs = sorted(freetext.glob(f"*_seed{seed}.json"))
+    runs = sorted(freetext.glob(naming.glob))
     if args.arm:
-        runs = [r for r in runs if r.stem == f"{args.arm}_seed{seed}"]
+        runs = [r for r in runs if r.stem == naming.stem(args.arm)]
     if not runs:
         console.print(
             f"[red]No generated runs under {freetext}.[/] Run scripts/12_freetext_eval.py first."
@@ -318,24 +353,34 @@ def main() -> int:
     table.add_column("Unparseable", justify="right")
 
     for run_path in runs:
-        arm_name = run_path.stem.removesuffix(f"_seed{seed}")
-        if judged_path(paths.results, arm_name, seed).is_file() and not args.force:
+        arm_name = naming.arm_of(run_path.stem)
+        if judged_path(paths.results, naming, arm_name).is_file() and not args.force:
             # Resumable across arms: a judge server that dies after four of six
             # arms should cost two arms of re-judging, not six.
             console.print(f"  [dim]{arm_name}: already judged, skipping (--force to redo)[/]")
             continue
         try:
-            judgement = judge_one_run(run_path, judge, tuple(judge_config.seeds), args.workers)
+            judgement = judge_one_run(
+                run_path, arm_name, judge, tuple(judge_config.seeds), args.workers
+            )
         except JudgeUnavailableError as exc:
             console.print(f"[red]{exc}[/]")
             return 1
 
-        out = judged_path(paths.results, judgement.arm, seed)
+        generated = json.loads(run_path.read_text(encoding="utf-8"))
+        out = judged_path(paths.results, naming, judgement.arm)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(
             json.dumps(
                 {
                     **judgement.as_json(),
+                    "dataset": naming.dataset,
+                    "generated_arm": generated["arm"],
+                    "generated_run": run_path.name,
+                    # Carried over so the judged file says how often the
+                    # answer it scored was a fragment.
+                    "max_new_tokens": generated.get("max_new_tokens"),
+                    "capped_answers": generated.get("capped_answers"),
                     "judge": judge_config.describe(),
                     "judge_calls": judge.calls,
                     "items": [

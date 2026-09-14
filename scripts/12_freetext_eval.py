@@ -32,6 +32,7 @@ from fvr.data.schema import Passage
 from fvr.eval.device import device_occupancy
 from fvr.eval.freetext import (
     DEFAULT_N_ITEMS,
+    MAX_NEW_TOKENS,
     FreeTextAnswer,
     FreeTextRun,
     option_dependent_reason,
@@ -47,7 +48,6 @@ from fvr.seeding import set_all_seeds
 
 console = Console()
 
-MAX_NEW_TOKENS = 96
 LATENCY_SAMPLES = 60
 WARMUP = 3
 
@@ -62,7 +62,7 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--n-items", type=int, default=DEFAULT_N_ITEMS)
-    parser.add_argument("--dataset", choices=["medmcqa", "miriad"], default="medmcqa")
+    parser.add_argument("--dataset", choices=sorted(MAX_NEW_TOKENS), default="medmcqa")
     parser.add_argument(
         "--tag", default=None, help="output stem; defaults to <arm>_seed<N> (use for MIRIAD runs)"
     )
@@ -79,6 +79,8 @@ def main() -> int:
     paths = bootstrap_env(config)
     seed = args.seed if args.seed is not None else config.seed
     batch_size = args.batch_size if args.batch_size is not None else config.eval_batch_size
+    # Per dataset, from the reference length distribution — see MAX_NEW_TOKENS.
+    max_new_tokens = MAX_NEW_TOKENS[args.dataset]
     set_all_seeds(seed)
 
     arm = get_arm(args.arm)
@@ -179,7 +181,7 @@ def main() -> int:
         task = progress.add_task("generating", total=len(prompts))
         for start in range(0, len(prompts), batch_size):
             chunk = prompts[start : start + batch_size]
-            generated = engine.generate_batch(chunk, max_new_tokens=MAX_NEW_TOKENS)
+            generated = engine.generate_batch(chunk, max_new_tokens=max_new_tokens)
             for question, context, item in zip(
                 questions[start : start + batch_size],
                 retrieved[start : start + batch_size],
@@ -209,11 +211,12 @@ def main() -> int:
     recorder = LatencyRecorder(warmup=WARMUP)
     for prompt in prompts[: LATENCY_SAMPLES + WARMUP]:
         with recorder.measure():
-            engine.generate_one(prompt, max_new_tokens=MAX_NEW_TOKENS)
+            engine.generate_one(prompt, max_new_tokens=max_new_tokens)
 
     run = FreeTextRun(
         arm=arm.name,
         excluded_option_dependent=len(excluded),
+        max_new_tokens=max_new_tokens,
         seed=seed,
         split_sha256=split_sha,
         model=loaded.describe(),
@@ -231,12 +234,19 @@ def main() -> int:
     console.print(f"[bold]{arm.name}[/]: {len(answers)} answers")
     console.print(f"  empty      {run.empty_answers}")
     console.print(f"  mean tokens {run.mean_completion_tokens:.1f} generated")
+    console.print(f"  capped     {run.capped_answers} at {max_new_tokens} tokens")
     console.print(f"  latency    {run.latency}")
     console.print(f"  written    [cyan]{out}[/]")
     if run.empty_answers:
         console.print(
             f"  [yellow]{run.empty_answers} empty answer(s) — these are kept and will be "
             "judged as failures, not dropped.[/]"
+        )
+    if run.capped_answers > 0.05 * len(answers):
+        console.print(
+            f"  [yellow]{run.capped_answers / len(answers):.0%} of answers hit the "
+            f"{max_new_tokens}-token bound. If that share differs between arms the judge "
+            "is scoring the bound; raise MAX_NEW_TOKENS for this dataset and regenerate.[/]"
         )
     return 0
 

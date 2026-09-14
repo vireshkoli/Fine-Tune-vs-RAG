@@ -145,6 +145,49 @@ class FreeTextAnswer:
         }
 
 
+#: Hard bound on generated tokens per answer, by dataset. Set from the reference
+#: answer distribution so that the bound is never the thing being measured.
+#: MedMCQA free-text references are option phrases (a few tokens): 96 leaves
+#: room for a sentence of justification and under 3% of answers reach it.
+#: MIRIAD references are passage-grounded paragraphs — p50 91, p99 195, max 212
+#: tokens on the frozen test set — and an arm fine-tuned on that distribution
+#: writes at that length. At 96 it was cut off mid-sentence on 39 to 51% of items
+#: while the base model (which answers briefly) lost under 1%, so the judge
+#: would have been scoring the cap, not the weights.
+MAX_NEW_TOKENS: dict[str, int] = {"medmcqa": 96, "miriad": 256}
+
+
+@dataclass(frozen=True)
+class RunNaming:
+    """How generated runs are named on disk, and how judgements find them.
+
+    MedMCQA runs are ``<arm>_seed<N>`` because the arm name is the whole
+    identity and seeds are replicated. MIRIAD runs are named by tag
+    (``miriad-qlora-doc``) because the same arm appears with two adapters and
+    the tag is what distinguishes them; the seed is inside the file.
+    """
+
+    dataset: str
+    seed: int
+
+    def stem(self, arm: str) -> str:
+        return arm if self.dataset == "miriad" else f"{arm}_seed{self.seed}"
+
+    def arm_of(self, stem: str) -> str:
+        if self.dataset == "miriad":
+            if not stem.startswith("miriad-"):
+                raise ValueError(f"not a MIRIAD run: {stem!r}")
+            return stem
+        suffix = f"_seed{self.seed}"
+        if not stem.endswith(suffix):
+            raise ValueError(f"not a seed-{self.seed} run: {stem!r}")
+        return stem.removesuffix(suffix)
+
+    @property
+    def glob(self) -> str:
+        return "miriad-*.json" if self.dataset == "miriad" else f"*_seed{self.seed}.json"
+
+
 @dataclass
 class FreeTextRun:
     """Every generated answer for one arm, before any judging."""
@@ -161,6 +204,9 @@ class FreeTextRun:
     #: Test-split items left out because their gold answer needs the options.
     #: Recorded so the free-text set's size is explained, not just stated.
     excluded_option_dependent: int = 0
+    #: The generation bound in force, so a reader of the file can tell whether
+    #: ``capped_answers`` is noise or a confound.
+    max_new_tokens: int | None = None
 
     @property
     def empty_answers(self) -> int:
@@ -171,6 +217,19 @@ class FreeTextRun:
         where it happened to speak.
         """
         return sum(1 for a in self.answers if not a.answer.strip())
+
+    @property
+    def capped_answers(self) -> int:
+        """Answers that ran into ``max_new_tokens`` and were cut off.
+
+        A capped answer ends wherever the budget did, and the judge scores the
+        fragment. A few are inevitable; a share that differs between arms is
+        the bound leaking into the comparison, which is why it is reported
+        next to the mean score rather than left for someone to notice.
+        """
+        if self.max_new_tokens is None:
+            return 0
+        return sum(1 for a in self.answers if a.completion_tokens >= self.max_new_tokens)
 
     @property
     def mean_completion_tokens(self) -> float:
@@ -186,6 +245,8 @@ class FreeTextRun:
             "n_items": len(self.answers),
             "empty_answers": self.empty_answers,
             "excluded_option_dependent": self.excluded_option_dependent,
+            "max_new_tokens": self.max_new_tokens,
+            "capped_answers": self.capped_answers,
             "mean_completion_tokens": round(self.mean_completion_tokens, 2),
             "latency": self.latency,
             "retrieval": self.retrieval,

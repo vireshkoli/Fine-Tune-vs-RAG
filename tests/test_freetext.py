@@ -15,8 +15,10 @@ import pytest
 
 from fvr.data.schema import Question
 from fvr.eval.freetext import (
+    MAX_NEW_TOKENS,
     FreeTextAnswer,
     FreeTextRun,
+    RunNaming,
     UnlabelledQuestionError,
     option_dependent_reason,
     reference_answer,
@@ -133,6 +135,80 @@ class TestRun:
 
     def test_empty_run_does_not_divide_by_zero(self) -> None:
         assert self.a_run([]).mean_completion_tokens == 0.0
+
+    def test_counts_answers_that_hit_the_generation_bound(self) -> None:
+        """A capped answer is a fragment; the judge scores the fragment.
+
+        The count is reported per run because a share that differs between
+        arms is the bound leaking into the comparison — which is exactly what
+        happened to the MIRIAD fine-tuned arms at 96 tokens.
+        """
+        run = self.a_run(
+            [an_answer(completion_tokens=96), an_answer(completion_tokens=95), an_answer()]
+        )
+        run.max_new_tokens = 96
+        assert run.capped_answers == 1
+        payload = run.to_json()
+        assert payload["max_new_tokens"] == 96
+        assert payload["capped_answers"] == 1
+
+    def test_unknown_bound_reports_no_capped_answers(self) -> None:
+        run = self.a_run([an_answer(completion_tokens=1000)])
+        assert run.max_new_tokens is None
+        assert run.capped_answers == 0
+        assert run.to_json()["capped_answers"] == 0
+
+
+class TestGenerationBound:
+    def test_every_dataset_has_a_bound(self) -> None:
+        assert set(MAX_NEW_TOKENS) == {"medmcqa", "miriad"}
+
+    def test_miriad_bound_clears_the_longest_reference(self) -> None:
+        """The frozen MIRIAD test references top out at 212 Qwen3 tokens.
+
+        The bound must sit above that with headroom, or an arm that writes at
+        reference length is scored on where the budget ran out.
+        """
+        assert MAX_NEW_TOKENS["miriad"] >= 256
+
+    def test_medmcqa_bound_is_the_original(self) -> None:
+        # The six MedMCQA runs were generated at 96; changing this silently
+        # would make new seeds incomparable with them.
+        assert MAX_NEW_TOKENS["medmcqa"] == 96
+
+
+class TestRunNaming:
+    def test_medmcqa_runs_are_named_by_arm_and_seed(self) -> None:
+        naming = RunNaming("medmcqa", 42)
+        assert naming.stem("qlora") == "qlora_seed42"
+        assert naming.arm_of("qlora_seed42") == "qlora"
+        assert naming.glob == "*_seed42.json"
+
+    def test_miriad_runs_are_named_by_tag(self) -> None:
+        """Two MIRIAD runs share the arm "qlora" and differ only by adapter."""
+        naming = RunNaming("miriad", 42)
+        assert naming.stem("miriad-qlora-doc") == "miriad-qlora-doc"
+        assert naming.arm_of("miriad-qlora-doc") == "miriad-qlora-doc"
+        assert naming.glob == "miriad-*.json"
+
+    def test_rejects_a_stem_from_the_other_dataset(self) -> None:
+        with pytest.raises(ValueError):
+            RunNaming("medmcqa", 42).arm_of("miriad-base")
+        with pytest.raises(ValueError):
+            RunNaming("miriad", 42).arm_of("base_seed42")
+
+    def test_rejects_another_seed(self) -> None:
+        with pytest.raises(ValueError):
+            RunNaming("medmcqa", 42).arm_of("qlora_seed1")
+
+    def test_globs_do_not_overlap(self, tmp_path: Path) -> None:
+        """A MIRIAD judging pass must never pick up a MedMCQA run, or vice versa."""
+        for name in ("base_seed42.json", "miriad-base.json", "miriad-qlora-qa.json"):
+            (tmp_path / name).write_text("{}", encoding="utf-8")
+        medmcqa = {p.name for p in tmp_path.glob(RunNaming("medmcqa", 42).glob)}
+        miriad = {p.name for p in tmp_path.glob(RunNaming("miriad", 42).glob)}
+        assert medmcqa == {"base_seed42.json"}
+        assert miriad == {"miriad-base.json", "miriad-qlora-qa.json"}
 
 
 def with_gold(gold: str, qid: str = "g1") -> Question:
