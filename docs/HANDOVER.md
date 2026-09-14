@@ -121,11 +121,16 @@ full of "[More Information Needed]" and is excluded by allowlist.
 ```bash
 make verify-recoverable   # gates the next step; fails if anything exists only locally
 make teardown             # dry run: prints the byte-exact deletion manifest
-make teardown EXECUTE=1   # reclaims ~33 GiB
+make teardown EXECUTE=1   # reclaims ~109 GiB (hub 70, indices 18, checkpoints 10, judge venv 10)
 du -sh ~/.cache/huggingface   # must be unchanged — proof nothing outside scope was touched
 ```
 
-The only deletable root is `$PROJECT_ROOT/.artifacts`. `~/.cache/huggingface`
+The only deletable root is `$PROJECT_ROOT/.artifacts`, and the plan sweeps
+*everything* directly under it — the four declared directories plus whatever
+else accumulated there (the judge's vLLM virtualenv, `uv-cache`, `vllm-cache`,
+`logs`, `locks`, `superseded`), each marked `(undeclared)` in the manifest.
+Sizes are de-duplicated by inode, so the venv hard-linked into `uv-cache` is
+counted once. `~/.cache/huggingface`
 held **19 GB of a labmate's unrelated prior work** (Llama-3.1-8B, CLIP, dinov2,
 InLegalBERT), so it is on an explicit denylist *and* its size is asserted
 unchanged across the operation. The separation is structural rather than

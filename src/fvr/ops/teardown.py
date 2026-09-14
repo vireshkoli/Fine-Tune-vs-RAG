@@ -68,11 +68,28 @@ def assert_deletable(target: Path, paths: Paths | None = None) -> Path:
     return resolved
 
 
-def directory_size(path: Path) -> int:
-    """Bytes on disk, ignoring symlinks so HF's snapshot links are not double-counted."""
+def directory_size(path: Path, seen: set[tuple[int, int]] | None = None) -> int:
+    """Bytes on disk, ignoring symlinks so HF's snapshot links are not double-counted.
+
+    ``seen`` is a set of ``(device, inode)`` pairs shared across calls, so a
+    file hard-linked into two targets (uv links the judge's virtualenv to its
+    cache) is counted once per plan rather than once per target.
+    """
     if not path.exists():
         return 0
-    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file() and not f.is_symlink())
+    files = [path] if path.is_file() else [f for f in path.rglob("*") if f.is_file()]
+    total = 0
+    for file in files:
+        if file.is_symlink():
+            continue
+        stat = file.stat()
+        if seen is not None:
+            key = (stat.st_dev, stat.st_ino)
+            if key in seen:
+                continue
+            seen.add(key)
+        total += stat.st_size
+    return total
 
 
 @dataclass
@@ -81,6 +98,12 @@ class DeletionPlan:
 
     targets: list[tuple[Path, int]] = field(default_factory=list)
     protected: list[tuple[Path, int]] = field(default_factory=list)
+    #: Entries under the artifact root that no ``Paths`` field declares — the
+    #: judge's virtualenv, tool caches, logs, locks, superseded runs. They are
+    #: deleted like everything else (the root is the allowlist, not the field
+    #: list) and named here so the manifest says what they were. Without this
+    #: sweep the first teardown would have left 11 GiB of vLLM venv behind.
+    undeclared: list[Path] = field(default_factory=list)
 
     @property
     def total_bytes(self) -> int:
@@ -93,7 +116,8 @@ class DeletionPlan:
     def render(self) -> str:
         lines = ["Will DELETE:"]
         for path, size in self.targets:
-            lines.append(f"  {size / 2**30:8.2f} GiB  {path}")
+            note = "  (undeclared)" if path in self.undeclared else ""
+            lines.append(f"  {size / 2**30:8.2f} GiB  {path}{note}")
         lines.append(f"  {'-' * 8}")
         lines.append(f"  {self.total_gib:8.2f} GiB  total")
         lines.append("")
@@ -107,9 +131,21 @@ def plan_teardown(paths: Paths | None = None) -> DeletionPlan:
     """Compute the deletion manifest without deleting anything."""
     paths = paths or Paths()
     plan = DeletionPlan()
+    declared = {assert_deletable(target, paths) for target in paths.deletable()}
+    seen: set[tuple[int, int]] = set()
     for target in paths.deletable():
         if target.exists():
-            plan.targets.append((assert_deletable(target, paths), directory_size(target)))
+            plan.targets.append((assert_deletable(target, paths), directory_size(target, seen)))
+    # Then everything else directly under the root. A symlink pointing out of
+    # the tree fails assert_deletable here, before anything is touched.
+    artifacts = paths.artifacts.resolve()
+    if artifacts.is_dir():
+        for child in sorted(artifacts.iterdir()):
+            resolved = assert_deletable(child, paths)
+            if resolved in declared:
+                continue
+            plan.targets.append((resolved, directory_size(child, seen)))
+            plan.undeclared.append(resolved)
     for shared in _shared_caches()[:2]:
         expanded = shared.expanduser()
         if expanded.exists():
@@ -128,8 +164,17 @@ def execute_teardown(
     if not dry_run:
         for target, _ in plan.targets:
             assert_deletable(target, paths)  # checked again immediately before deletion
-            shutil.rmtree(target, ignore_errors=False)
+            if target.is_dir() and not target.is_symlink():
+                shutil.rmtree(target, ignore_errors=False)
+            else:
+                target.unlink()
             removed.append(str(target))
+        # The root itself, once empty. An empty .artifacts/ left behind is not
+        # disk, but it is the difference between "vacated" and "mostly vacated".
+        root = paths.artifacts.resolve()
+        if root.is_dir() and not any(root.iterdir()):
+            root.rmdir()
+            removed.append(str(root))
 
     after = {path: directory_size(path) for path in before}
     changed = {str(p): (before[p], after[p]) for p in before if before[p] != after[p]}
