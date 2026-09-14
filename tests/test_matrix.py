@@ -101,6 +101,16 @@ class TestCommands:
                     f"{job.name} evaluates {run_name} without depending on it"
                 )
 
+    def test_miriad_jobs_all_hang_off_one_build(self, matrix: list[Job]) -> None:
+        """Adapters and index must derive from one split, not two agreeing computations."""
+        miriad = [job for job in matrix if job.group == "miriad"]
+        assert miriad[0].name == "miriad-build"
+        for job in miriad[1:]:
+            assert "miriad-build" in job.depends_on, job.name
+        retrieving = [j for j in miriad if "--corpus" in j.command]
+        assert all("miriad-parity" in j.command for j in retrieving)
+        assert len(retrieving) == 3
+
     def test_ablations_never_write_into_the_headline_directory(self, matrix: list[Job]) -> None:
         """results/runs/ feeds the README; a k-sweep landing there corrupts it."""
         ablation_evals = [
@@ -149,6 +159,7 @@ class TestBudget:
             "topk",
             "embedder",
             "freetext",
+            "miriad",
             "quantization",
             "cross-base",
         }

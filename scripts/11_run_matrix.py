@@ -62,6 +62,8 @@ def show_plan(jobs: list[Job], *, all_jobs: list[Job]) -> None:
         "embedder": "Does a domain-specific embedder retrieve better medicine?",
         "quantization": "What does serving in 4-bit cost in quality and latency?",
         "cross-base": "Does the conclusion hold on a second base model?",
+        "freetext": "Generation for the judged free-text arms",
+        "miriad": "Literal information parity: weights vs index on identical passages",
     }
 
     pending_by_group = by_group(jobs)
@@ -151,7 +153,7 @@ def job_kind(job: Job) -> str:
     script = job.command[1]
     if "04_train" in script:
         return "train"
-    if "02_build_index" in script:
+    if "02_build_index" in script or "14_miriad_parity" in script:
         return "index"
     return "eval"
 

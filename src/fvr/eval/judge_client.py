@@ -187,7 +187,11 @@ def server_command(
     """
     env = f"CUDA_VISIBLE_DEVICES={device}"
     if hf_home is not None:
-        env += f" HF_HOME={hf_home} HF_HUB_OFFLINE=1"
+        # This project pins HUGGINGFACE_HUB_CACHE *directly* at .artifacts/hub, so
+        # snapshots live at .artifacts/hub/models--* rather than under a hub/
+        # subfolder. HF_HOME alone would send vLLM to .artifacts/hub/hub/ and it
+        # would report the fully-downloaded judge as missing — which it did.
+        env += f" HF_HOME={hf_home} HF_HUB_CACHE={hf_home} HF_HUB_OFFLINE=1"
     return (
         f"{env} {vllm_bin} serve {config.repo_id} "
         f"--revision {config.revision} --tokenizer-revision {config.revision} "

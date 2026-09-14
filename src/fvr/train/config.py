@@ -35,6 +35,11 @@ class TrainConfig(BaseModel):
 
     name: str
     model_config_path: str = "configs/model/qwen3-8b.yaml"
+    #: What the adapter is trained on. ``medmcqa`` is the benchmark; the two
+    #: ``miriad-*`` variants are the information-parity sub-experiment, which
+    #: reads pre-built records from ``.artifacts/datasets/miriad/`` so the split
+    #: is decided once (scripts/14_miriad_parity.py) and shared with the index.
+    dataset: Literal["medmcqa", "miriad-qa", "miriad-doc"] = "medmcqa"
 
     lora: LoraConfig = Field(default_factory=LoraConfig)
 

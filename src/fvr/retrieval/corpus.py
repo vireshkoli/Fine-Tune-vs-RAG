@@ -211,8 +211,13 @@ def build_external_corpus(
     *,
     chunk_chars: int = DEFAULT_CHUNK_CHARS,
     max_chunks: int | None = None,
+    corpus: str = "external",
 ) -> tuple[list[Passage], CorpusStats]:
-    """Chunk ``(title, text)`` documents into the external corpus.
+    """Chunk ``(title, text)`` documents into a document corpus.
+
+    ``corpus`` names the index; the MIRIAD parity experiment reuses this
+    builder for its own passages so the chunking is identical to the external
+    index's.
 
     Callers deduplicate upstream: MIRIAD repeats the same ``passage_text``
     across roughly 2.5 QA pairs, and indexing the duplicates would waste both
@@ -234,13 +239,13 @@ def build_external_corpus(
                 Passage(
                     id=_passage_id("ext", chunk, len(passages)),
                     text=chunk,
-                    corpus="external",
+                    corpus=corpus,
                     title=title or None,
                 )
             )
             if max_chunks is not None and len(passages) >= max_chunks:
                 return passages, CorpusStats(
-                    name="external",
+                    name=corpus,
                     source_documents=used_documents,
                     chunks=len(passages),
                     excluded_documents=0,
@@ -248,7 +253,7 @@ def build_external_corpus(
                 )
 
     return passages, CorpusStats(
-        name="external",
+        name=corpus,
         source_documents=used_documents,
         chunks=len(passages),
         excluded_documents=0,

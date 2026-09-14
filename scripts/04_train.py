@@ -57,7 +57,12 @@ import time
 from rich.console import Console
 
 from fvr.data.loaders import load_medmcqa
-from fvr.data.sft import build_sft_dataset, to_hf_dataset
+from fvr.data.sft import (
+    build_sft_dataset,
+    messages_to_hf_dataset,
+    texts_to_hf_dataset,
+    to_hf_dataset,
+)
 from fvr.eval.device import assert_device_exclusive
 from fvr.models.loader import load_model_config
 from fvr.seeding import set_all_seeds
@@ -65,6 +70,9 @@ from fvr.train.callbacks import latest_checkpoint
 from fvr.train.config import load_train_config
 
 console = Console()
+
+#: Validation records held from the tail of a MIRIAD training file.
+MIRIAD_VAL = 200
 
 
 def main() -> int:
@@ -127,36 +135,60 @@ def main() -> int:
     if args.memory_cap_gib is not None:
         console.print(f"Memory cap: {float(args.memory_cap_gib):.0f} GiB for this process")
 
-    split_ids = json.loads((paths.results / "split_ids.json").read_text(encoding="utf-8"))
-    held_out_ids = set(split_ids["test"]) | set(split_ids["val"])
-    val_ids = set(split_ids["val"])
+    if train_config.dataset.startswith("miriad"):
+        # Pre-built by scripts/14_miriad_parity.py, so the training set and the
+        # parity index are derived from one split rather than two computations
+        # that happen to agree. The last MIRIAD_VAL records are validation.
+        variant = train_config.dataset.removeprefix("miriad-")
+        source = paths.datasets / "miriad" / f"{variant}.jsonl"
+        if not source.is_file():
+            console.print(
+                f"[red]{source} missing. Run: uv run python scripts/14_miriad_parity.py[/]"
+            )
+            return 1
+        items = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines()]
+        n_train = len(items) - MIRIAD_VAL
+        console.print(
+            f"MIRIAD {variant}: {n_train:,} train / {MIRIAD_VAL} val records from {source}"
+        )
+        if variant == "qa":
+            train_dataset = messages_to_hf_dataset([i["messages"] for i in items[:n_train]])
+            eval_dataset = messages_to_hf_dataset([i["messages"] for i in items[n_train:]])
+        else:
+            train_dataset = texts_to_hf_dataset([i["text"] for i in items[:n_train]])
+            eval_dataset = texts_to_hf_dataset([i["text"] for i in items[n_train:]])
+        records = items[:n_train]
+    else:
+        split_ids = json.loads((paths.results / "split_ids.json").read_text(encoding="utf-8"))
+        held_out_ids = set(split_ids["test"]) | set(split_ids["val"])
+        val_ids = set(split_ids["val"])
 
-    console.print("Loading MedMCQA…")
-    pool, _ = load_medmcqa("validation")
-    forbidden = frozenset(q.content_hash() for q in pool if q.id in held_out_ids)
-    train_rows, clean = load_medmcqa("train")
-    console.print(f"  train cleaning: {clean.summary()}")
+        console.print("Loading MedMCQA…")
+        pool, _ = load_medmcqa("validation")
+        forbidden = frozenset(q.content_hash() for q in pool if q.id in held_out_ids)
+        train_rows, clean = load_medmcqa("train")
+        console.print(f"  train cleaning: {clean.summary()}")
 
-    records, stats = build_sft_dataset(
-        train_rows,
-        forbidden_content_hashes=forbidden,
-        include_explanation=train_config.include_explanation,
-        max_samples=train_config.max_train_samples,
-        seed=train_config.seed,
-    )
-    console.print(f"  SFT: {stats.summary()}")
-    if stats.dropped_leaked:
-        console.print(f"  [yellow]{stats.dropped_leaked} leaked rows excluded from training[/]")
+        records, stats = build_sft_dataset(
+            train_rows,
+            forbidden_content_hashes=forbidden,
+            include_explanation=train_config.include_explanation,
+            max_samples=train_config.max_train_samples,
+            seed=train_config.seed,
+        )
+        console.print(f"  SFT: {stats.summary()}")
+        if stats.dropped_leaked:
+            console.print(f"  [yellow]{stats.dropped_leaked} leaked rows excluded from training[/]")
 
-    val_records, val_stats = build_sft_dataset(
-        [q for q in pool if q.id in val_ids],
-        forbidden_content_hashes=frozenset(),
-        include_explanation=train_config.include_explanation,
-    )
-    console.print(f"  val: {val_stats.summary()}")
+        val_records, val_stats = build_sft_dataset(
+            [q for q in pool if q.id in val_ids],
+            forbidden_content_hashes=frozenset(),
+            include_explanation=train_config.include_explanation,
+        )
+        console.print(f"  val: {val_stats.summary()}")
 
-    train_dataset = to_hf_dataset(records)
-    eval_dataset = to_hf_dataset(val_records)
+        train_dataset = to_hf_dataset(records)
+        eval_dataset = to_hf_dataset(val_records)
 
     output_dir = paths.checkpoints / train_config.name
     existing = latest_checkpoint(output_dir)

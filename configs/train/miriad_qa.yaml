@@ -1,0 +1,33 @@
+# MIRIAD parity, `qa` variant: fine-tune on question -> answer pairs from a set
+# of passages; the miriad-parity index holds those same passages. The weights
+# saw the answers to *other* questions about each passage; the index holds the
+# passage. Every hyperparameter is the MedMCQA control's.
+name: miriad-qa
+model_config_path: configs/model/qwen3-8b.yaml
+dataset: miriad-qa
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+quantization: nf4
+learning_rate: 2.0e-4
+lr_scheduler: cosine
+warmup_ratio: 0.03
+weight_decay: 0.0
+max_grad_norm: 1.0
+epochs: 1.0
+per_device_batch_size: 4
+gradient_accumulation_steps: 4
+max_seq_length: 1024
+gradient_checkpointing: true
+max_train_samples: null
+include_explanation: true
+save_steps: 200
+eval_steps: 200
+logging_steps: 10
+save_total_limit: 3
+metric_for_best_model: eval_loss
+seed: 42
+optim: paged_adamw_8bit
+report_to: none
