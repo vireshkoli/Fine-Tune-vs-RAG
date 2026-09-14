@@ -18,6 +18,7 @@ from __future__ import annotations
 from fvr.config import bootstrap_env, load_config  # isort: skip
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -61,6 +62,10 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--n-items", type=int, default=DEFAULT_N_ITEMS)
+    parser.add_argument("--dataset", choices=["medmcqa", "miriad"], default="medmcqa")
+    parser.add_argument(
+        "--tag", default=None, help="output stem; defaults to <arm>_seed<N> (use for MIRIAD runs)"
+    )
     parser.add_argument("--limit", type=int, default=None, help="smoke run")
     parser.add_argument(
         "--out",
@@ -87,20 +92,41 @@ def main() -> int:
         console.print(f"[red]Missing index {corpus!r}. Run: make index CORPUS={corpus}[/]")
         return 1
 
-    manifest = json.loads((paths.results / "split_manifest.json").read_text(encoding="utf-8"))
-    split_ids = json.loads((paths.results / "split_ids.json").read_text(encoding="utf-8"))
-    test_ids = set(split_ids["test"])
+    if args.dataset == "miriad":
+        # The MIRIAD parity test set: 300 held-out QA pairs whose passages are
+        # in the training set and the index. Frozen by 14_miriad_parity.py.
+        test_file = paths.results / "miriad" / "test_items.jsonl"
+        if not test_file.is_file():
+            console.print(f"[red]{test_file} missing. Run scripts/14_miriad_parity.py first.[/]")
+            return 1
+        from fvr.data.schema import Question
 
-    pool, _ = load_medmcqa("validation")
-    test_items = [q for q in pool if q.id in test_ids]
-    excluded = [q for q in test_items if q.answer_idx is not None and option_dependent_reason(q)]
-    questions = select_freetext_items(test_items, n=args.n_items, seed=config.seed)
-    if args.limit:
-        questions = questions[: args.limit]
-    console.print(
-        f"Free-text set: {len(questions)} items from the frozen test split "
-        f"({len(excluded)} excluded: gold answer only meaningful with the options shown)"
-    )
+        questions = [
+            Question(**json.loads(line)) for line in test_file.read_text("utf-8").splitlines()
+        ]
+        split_sha = hashlib.sha256(test_file.read_bytes()).hexdigest()
+        excluded = []
+        if args.limit:
+            questions = questions[: args.limit]
+        console.print(f"Free-text set: {len(questions)} MIRIAD parity items")
+    else:
+        manifest = json.loads((paths.results / "split_manifest.json").read_text(encoding="utf-8"))
+        split_ids = json.loads((paths.results / "split_ids.json").read_text(encoding="utf-8"))
+        test_ids = set(split_ids["test"])
+        split_sha = manifest["splits"]["test"]["sha256"]
+
+        pool, _ = load_medmcqa("validation")
+        test_items = [q for q in pool if q.id in test_ids]
+        excluded = [
+            q for q in test_items if q.answer_idx is not None and option_dependent_reason(q)
+        ]
+        questions = select_freetext_items(test_items, n=args.n_items, seed=config.seed)
+        if args.limit:
+            questions = questions[: args.limit]
+        console.print(
+            f"Free-text set: {len(questions)} items from the frozen test split "
+            f"({len(excluded)} excluded: gold answer only meaningful with the options shown)"
+        )
 
     model_config = load_model_config(args.model)
     # The card actually in use is whatever CUDA_VISIBLE_DEVICES pinned — the
@@ -189,7 +215,7 @@ def main() -> int:
         arm=arm.name,
         excluded_option_dependent=len(excluded),
         seed=seed,
-        split_sha256=manifest["splits"]["test"]["sha256"],
+        split_sha256=split_sha,
         model=loaded.describe(),
         environment=environment_fingerprint(),
         answers=answers,
@@ -197,7 +223,8 @@ def main() -> int:
         retrieval=retrieval_info,
         device_occupancy=device_occupancy(physical_device).as_dict(),
     )
-    out = Path(args.out) if args.out else paths.results / "freetext" / f"{arm.name}_seed{seed}.json"
+    stem = args.tag or f"{arm.name}_seed{seed}"
+    out = Path(args.out) if args.out else paths.results / "freetext" / f"{stem}.json"
     run.write(out)
 
     console.print()

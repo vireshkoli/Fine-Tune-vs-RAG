@@ -42,6 +42,7 @@ GROUP_ORDER: tuple[str, ...] = (
     "embedder",
     "freetext",
     "cross-base",
+    "miriad",
     "seeds",
     "rank",
     "epochs",
@@ -87,6 +88,7 @@ def _train(
     gpu_hours: float = BASE_TRAIN_GPU_HOURS,
     seed: int | None = None,
     note: str = "",
+    depends_on: tuple[str, ...] = (),
 ) -> Job:
     command = ["python", "scripts/04_train.py", "--config", config]
     run_name = name
@@ -98,6 +100,7 @@ def _train(
         command=tuple(command),
         produces=paths.checkpoints / run_name / "adapter" / "adapter_config.json",
         gpu_hours=gpu_hours,
+        depends_on=depends_on,
         note=note,
     )
 
@@ -438,6 +441,70 @@ def build_matrix(paths: Paths | None = None) -> list[Job]:
     # Stable sort, so dependency order within a group is preserved. Every
     # dependency in this matrix is intra-group, which `validate` re-checks.
     jobs.sort(key=lambda job: GROUP_ORDER.index(job.group))
+    # --- MIRIAD information parity ------------------------------------------
+    # One script decides the split and derives the training files and the index
+    # from it, so the adapters and the retriever provably share their passages.
+    # Two fine-tunes: `qa` (answers to sibling questions about each passage) and
+    # `doc` (the passage text itself, the literal-parity variant). Six free-text
+    # generation runs over the frozen 300-item MIRIAD test set; judging follows
+    # separately against the served judge.
+    jobs.append(
+        Job(
+            name="miriad-build",
+            group="miriad",
+            command=("python", "scripts/14_miriad_parity.py"),
+            produces=paths.indices / "miriad-parity" / "index.faiss",
+            gpu_hours=0.2,
+            note="split + qa/doc training files + parity index",
+        )
+    )
+    for variant in ("qa", "doc"):
+        jobs.append(
+            _train(
+                f"miriad-{variant}",
+                "miriad",
+                f"configs/train/miriad_{variant}.yaml",
+                paths,
+                depends_on=("miriad-build",),
+            )
+        )
+    miriad_runs: tuple[tuple[str, str, str | None, bool], ...] = (
+        # (tag, arm, adapter run, retrieve)
+        ("miriad-base", "base", None, False),
+        ("miriad-rag", "rag-parity", None, True),
+        ("miriad-qlora-qa", "qlora", "miriad-qa", False),
+        ("miriad-qlora-qa-rag", "qlora-rag-parity", "miriad-qa", True),
+        ("miriad-qlora-doc", "qlora", "miriad-doc", False),
+        ("miriad-qlora-doc-rag", "qlora-rag-parity", "miriad-doc", True),
+    )
+    for tag, arm, adapter_run, retrieve in miriad_runs:
+        command = [
+            "python",
+            "scripts/12_freetext_eval.py",
+            "--arm",
+            arm,
+            "--dataset",
+            "miriad",
+            "--tag",
+            tag,
+        ]
+        depends = ["miriad-build"]
+        if adapter_run:
+            command += ["--adapter", _adapter_path(paths, adapter_run)]
+            depends.append(adapter_run)
+        if retrieve:
+            command += ["--corpus", "miriad-parity"]
+        jobs.append(
+            Job(
+                name=tag,
+                group="miriad",
+                command=tuple(command),
+                produces=paths.results / "freetext" / f"{tag}.json",
+                gpu_hours=0.2,
+                depends_on=tuple(depends),
+            )
+        )
+
     validate(jobs)
     return jobs
 

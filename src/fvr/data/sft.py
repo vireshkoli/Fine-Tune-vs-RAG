@@ -141,3 +141,23 @@ def to_hf_dataset(records: Sequence[SFTRecord]) -> object:
     from datasets import Dataset
 
     return Dataset.from_dict({"messages": [r.messages for r in records]})
+
+
+def messages_to_hf_dataset(messages: Sequence[list[dict[str, str]]]) -> object:
+    """Chat records that were built elsewhere (the MIRIAD ``qa`` variant)."""
+    from datasets import Dataset
+
+    return Dataset.from_dict({"messages": list(messages)})
+
+
+def texts_to_hf_dataset(texts: Sequence[str]) -> object:
+    """Plain-text records for causal-LM training (the MIRIAD ``doc`` variant).
+
+    A ``text`` column makes trl train on the raw passage rather than on a chat
+    turn — there is no instruction to learn, only the content. That is what
+    makes the doc variant's parity literal: the weights see the passage bytes
+    the index serves, with no prompt scaffolding in between.
+    """
+    from datasets import Dataset
+
+    return Dataset.from_dict({"text": list(texts)})

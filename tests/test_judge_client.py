@@ -191,6 +191,9 @@ class TestConcurrencyAndServing:
             config, device=0, vllm_bin=".artifacts/judge-venv/bin/vllm", hf_home=".artifacts/hub"
         )
         assert "HF_HOME=.artifacts/hub" in command
+        assert "HF_HUB_CACHE=.artifacts/hub" in command, (
+            "the project's cache is flat under .artifacts/hub; HF_HOME alone looks in hub/hub/"
+        )
         assert "HF_HUB_OFFLINE=1" in command, "a revision check at start-up can fail offline"
         assert f"--tokenizer-revision {config.revision}" in command
         assert command.count(config.revision) == 2
