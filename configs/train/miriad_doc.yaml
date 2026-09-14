@@ -16,9 +16,15 @@ warmup_ratio: 0.03
 weight_decay: 0.0
 max_grad_norm: 1.0
 epochs: 1.0
-per_device_batch_size: 4
-gradient_accumulation_steps: 4
-max_seq_length: 1024
+# Chunks are ~125 tokens against the qa variant's ~500, so the per-device batch
+# is 4x larger and accumulation 4x smaller: the effective batch of 16 — the part
+# of the recipe that affects optimisation — is unchanged, and the run is not four
+# times slower than it needs to be. max_seq_length 512 bounds a 600-char chunk
+# with room to spare. 189k chunks is the whole index; subsampling would break
+# the literal-parity claim, so the cost is taken rather than trimmed.
+per_device_batch_size: 16
+gradient_accumulation_steps: 1
+max_seq_length: 512
 gradient_checkpointing: true
 max_train_samples: null
 include_explanation: true
