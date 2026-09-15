@@ -8,6 +8,7 @@ A controlled six-arm benchmark in clinical multiple-choice QA. One base model,
 one frozen 1,000-item test set, one prompt, one GPU. Every number below comes
 from a committed JSON file and regenerates with `make report`.
 
+**[Everything on Hugging Face](https://huggingface.co/collections/vireshk/fine-tune-vs-rag-6aa99f3295c884f1a86d65fb)** ·
 **[Live demo](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag-live)** ·
 **[Results explorer](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag)** ·
 **[Adapter + model card](https://huggingface.co/vireshk/qwen3-8b-medmcqa-qlora)** ·
@@ -215,6 +216,7 @@ framework: **[REPORT.md](REPORT.md)**.
 
 | | |
 | --- | --- |
+| **Collection** | [huggingface.co/collections/vireshk/fine-tune-vs-rag](https://huggingface.co/collections/vireshk/fine-tune-vs-rag-6aa99f3295c884f1a86d65fb) — all four Hub artefacts on one page |
 | **Live demo** | [huggingface.co/spaces/vireshk/fine-tune-vs-rag-live](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag-live) — type a question; base, fine-tuned and both RAG arms answer with the benchmark's exact prompts and index, on ZeroGPU. `space_live/`, drift-guarded against the package by `tests/test_live_space.py` |
 | **Results explorer** | [huggingface.co/spaces/vireshk/fine-tune-vs-rag](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag) — static, precomputed from the committed runs, so it needs no GPU quota and never sleeps |
 | **Parity index** | [huggingface.co/datasets/vireshk/fine-tune-vs-rag-parity-index](https://huggingface.co/datasets/vireshk/fine-tune-vs-rag-parity-index) — the exact FAISS index the `rag-parity` arm used, 217,661 chunks |
