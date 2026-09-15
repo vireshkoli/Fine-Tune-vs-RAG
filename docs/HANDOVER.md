@@ -134,6 +134,9 @@ make push         # pushes the adapter and the static Space
 make push-live-dry / make push-live   # the parity index dataset and the live ZeroGPU Space
 ```
 
+All four Hub artefacts are grouped in one public collection,
+[fine-tune-vs-rag-6aa99f3295c884f1a86d65fb](https://huggingface.co/collections/vireshk/fine-tune-vs-rag-6aa99f3295c884f1a86d65fb), which is what to link from a résumé.
+
 `make push-dry` is the default for a reason. Publishing is outward-facing, and
 `src/fvr/ops/hub.py` enforces two things the reviewer should not have to
 remember: the model card must carry the not-for-clinical-use statement (it
