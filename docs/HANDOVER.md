@@ -101,6 +101,31 @@ command — it resumes from the latest checkpoint and the loss curve continues.
 Checkpoints are selected on the **validation** split; a test asserts the trainer
 never loads the test split.
 
+Everything beyond the headline arms is a job in `src/fvr/ops/matrix.py`;
+`make matrix` prints the grid and what is still pending, `make matrix-run`
+runs it cost-first on an exclusive GPU. Evaluations refuse to share a card
+(latency is a deliverable); training may, with `--allow-shared
+--memory-cap-gib`.
+
+### The free-text arms and the MIRIAD parity experiment
+
+```bash
+make judge-server                 # prints the vLLM command; run it in .artifacts/judge-venv
+make freetext ARM=base            # generate (one arm; the matrix runs the MIRIAD six)
+make judge                        # pointwise, then --pairwise, then --dataset miriad
+make freetext-stats               # tables + paired tests -> results/freetext/summary_*.md
+```
+
+Two things here that are easy to get wrong. The judge is a **70B AWQ model in
+its own virtualenv** (`.artifacts/judge-venv`, vLLM 0.19.1 — 0.20+ needs CUDA
+13) because vLLM pins torch and would rewrite this project's; it needs ~42 GiB
+free, so it cannot share a card with anything. And the **generation bound is
+per dataset** (`fvr.eval.freetext.MAX_NEW_TOKENS`): MedMCQA answers are short
+and 96 is generous; MIRIAD references run to 212 tokens and the arm fine-tuned
+on them writes at that length, so at 96 the judge was scoring where the budget
+ran out rather than what the model knew. Every run file records the bound and
+how many answers hit it.
+
 ## 5. Publishing
 
 ```bash
@@ -139,22 +164,24 @@ project's downloads never entered the shared cache to begin with.
 
 ## 7. Known gaps, in priority order
 
-1. **The free-text arm and its LLM judge.** Built, not run.
-   `scripts/12_freetext_eval.py` generates answers, `scripts/13_judge_freetext.py`
-   grades them against the frozen rubric in `src/fvr/prompts/judge.py`, and the
-   judge is served over HTTP from a *separate* vLLM virtualenv
-   (`make judge-server`) so vLLM never rewrites this project's torch. Needs the
-   37 GiB judge download, ~2-4 GPU-hours, then 50 hand labels for Cohen's κ.
-2. **The MIRIAD parity sub-experiment.** Not built. Fine-tune closed-book on
-   MIRIAD question→answer pairs and index the identical source passages. It is
-   evaluated free-text, so it depends on item 1.
-3. **Hand-annotation of `results/error_analysis/*_review.csv`.** Stratified and
+1. **Cohen's κ for the LLM judge.** 50 rows in
+   `results/freetext/judged/base_kappa_sheet.csv`, `human_score` blank. The
+   judge's own label is deliberately withheld from the sheet so grading is not
+   anchored. Fill it, then `uv run python scripts/13_judge_freetext.py --kappa`.
+   This is the highest-value hour left in the project: every free-text claim in
+   REPORT §2.4 currently rests on one unvalidated judge.
+2. **Hand-annotation of `results/error_analysis/*_review.csv`.** Stratified and
    pre-filled; the `human_label` and `notes` columns are blank.
-4. **Live inference demo.** ZeroGPU Spaces are hostable on a free account
+3. **Live inference demo.** ZeroGPU Spaces are hostable on a free account
    (verified by creating and deleting one); the static Space stays as the
-   permanent fallback.
+   permanent fallback. A live RAG arm would need a much smaller index than the
+   18 GiB one here — rebuild over the parity corpus alone, or ship the demo
+   closed-book.
 
 Resolved since the first version of this document: training-seed variance
 (three seeds), the full ablation grid (rank, epochs, top-k, embedder,
-quantisation), the size-matched external corpus, and the cross-base check on
-Llama-3.1-8B. All in REPORT §2.2 and §7.5, produced by `make matrix-run`.
+quantisation), the size-matched external corpus, the cross-base check on
+Llama-3.1-8B, the free-text arm with its served 70B judge (REPORT §2.4), and
+the MIRIAD information-parity sub-experiment (§2.5). Produced by
+`make matrix-run`, `make judge-server` + `make judge`, and
+`make freetext-stats`.
