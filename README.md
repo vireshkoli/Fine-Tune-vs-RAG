@@ -8,7 +8,8 @@ A controlled six-arm benchmark in clinical multiple-choice QA. One base model,
 one frozen 1,000-item test set, one prompt, one GPU. Every number below comes
 from a committed JSON file and regenerates with `make report`.
 
-**[Live demo](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag)** ·
+**[Live demo](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag-live)** ·
+**[Results explorer](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag)** ·
 **[Adapter + model card](https://huggingface.co/vireshk/qwen3-8b-medmcqa-qlora)** ·
 **[Full report](REPORT.md)** · **[Handover](docs/HANDOVER.md)**
 
@@ -214,7 +215,9 @@ framework: **[REPORT.md](REPORT.md)**.
 
 | | |
 | --- | --- |
-| **Demo** | [huggingface.co/spaces/vireshk/fine-tune-vs-rag](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag) — static, precomputed from the committed runs, so it needs no GPU quota and never sleeps |
+| **Live demo** | [huggingface.co/spaces/vireshk/fine-tune-vs-rag-live](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag-live) — type a question; base, fine-tuned and both RAG arms answer with the benchmark's exact prompts and index, on ZeroGPU. `space_live/`, drift-guarded against the package by `tests/test_live_space.py` |
+| **Results explorer** | [huggingface.co/spaces/vireshk/fine-tune-vs-rag](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag) — static, precomputed from the committed runs, so it needs no GPU quota and never sleeps |
+| **Parity index** | [huggingface.co/datasets/vireshk/fine-tune-vs-rag-parity-index](https://huggingface.co/datasets/vireshk/fine-tune-vs-rag-parity-index) — the exact FAISS index the `rag-parity` arm used, 217,661 chunks |
 | **Adapter** | [huggingface.co/vireshk/qwen3-8b-medmcqa-qlora](https://huggingface.co/vireshk/qwen3-8b-medmcqa-qlora) — LoRA r=16, with the full model card |
 | **Results** | `results/runs/*.json` — one file per arm, including every per-item prediction |
 | **Resurrection** | [docs/HANDOVER.md](docs/HANDOVER.md) — how to rebuild all of this on another machine after the lab disk is wiped |

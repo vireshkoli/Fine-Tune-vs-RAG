@@ -73,12 +73,14 @@ if tokenizer.pad_token_id is None:
     tokenizer.pad_token = tokenizer.eos_token
 
 _base = AutoModelForCausalLM.from_pretrained(
-    BASE_REPO, revision=BASE_REVISION, torch_dtype=torch.bfloat16
+    BASE_REPO, revision=BASE_REVISION, dtype=torch.bfloat16
 )
 # Unmerged on purpose: one copy of the weights serves both the base and the
 # fine-tuned arms through disable_adapter(). The benchmark merged the adapter
 # before timing it, so the latencies shown here are not the report's.
-model = PeftModel.from_pretrained(_base, ADAPTER_REPO)
+# torch_device="cpu": on ZeroGPU the adapter weights must not be loaded onto
+# CUDA at import; the single .to() below is the sanctioned move.
+model = PeftModel.from_pretrained(_base, ADAPTER_REPO, torch_device="cpu")
 model.eval()
 model.to(DEVICE)
 OPTION_IDS = bench.option_token_ids(tokenizer)

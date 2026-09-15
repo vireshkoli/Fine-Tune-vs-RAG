@@ -44,6 +44,6 @@ faster.
 | `assets/*.png` | figures, copied from `results/figures/` by the same command |
 
 Live inference is not part of this Space: it is a results explorer over the
-committed MCQ runs. The free-text and MIRIAD findings are reported in the
-repository's REPORT.md; a live demo would need a ZeroGPU runtime and a much
-smaller index, and is listed as an open item in the handover.
+committed MCQ runs. The live demo — all four arms answering a typed question
+on ZeroGPU — is
+[vireshk/fine-tune-vs-rag-live](https://huggingface.co/spaces/vireshk/fine-tune-vs-rag-live).

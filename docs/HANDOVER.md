@@ -130,7 +130,8 @@ how many answers hit it.
 
 ```bash
 make push-dry     # prints the exact upload manifest, uploads nothing
-make push         # pushes the adapter and the Space
+make push         # pushes the adapter and the static Space
+make push-live-dry / make push-live   # the parity index dataset and the live ZeroGPU Space
 ```
 
 `make push-dry` is the default for a reason. Publishing is outward-facing, and
@@ -172,11 +173,9 @@ project's downloads never entered the shared cache to begin with.
    REPORT §2.4 currently rests on one unvalidated judge.
 2. **Hand-annotation of `results/error_analysis/*_review.csv`.** Stratified and
    pre-filled; the `human_label` and `notes` columns are blank.
-3. **Live inference demo.** ZeroGPU Spaces are hostable on a free account
-   (verified by creating and deleting one); the static Space stays as the
-   permanent fallback. A live RAG arm would need a much smaller index than the
-   18 GiB one here — rebuild over the parity corpus alone, or ship the demo
-   closed-book.
+3. ~~Live inference demo.~~ **Shipped**: `vireshk/fine-tune-vs-rag-live` on
+   ZeroGPU, with the parity index published as a dataset. The one thing to
+   know: a free account holds two ZeroGPU Spaces, and this is the second.
 
 Resolved since the first version of this document: training-seed variance
 (three seeds), the full ablation grid (rank, epochs, top-k, embedder,
