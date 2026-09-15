@@ -1,0 +1,22 @@
+{
+  "output_dir": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/miriad-doc",
+  "train_gpu_seconds": 5330.395234107971,
+  "final_step": 11802,
+  "train_loss": 0.27520537243073645,
+  "best_eval_loss": 2.5749831199645996,
+  "resumed_from": "/home/ubuntu/Viresh/Fine_Tuned_Domain_LLM/.artifacts/checkpoints/miriad-doc/checkpoint-10400",
+  "n_train": 188831,
+  "n_eval": 200,
+  "trainable_params": 43646976,
+  "total_params": 4761498624,
+  "trainable_pct": 0.9166646773770022,
+  "device_occupancy": {
+    "device": 1,
+    "total_used_mib": 3,
+    "foreign_pids": [],
+    "foreign_mib": 0,
+    "exclusive": true
+  },
+  "memory_cap_gib": null,
+  "peak_memory_gib": 14.91798734664917
+}

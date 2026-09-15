@@ -16,6 +16,32 @@
       "capped_answers": 0,
       "mcq_accuracy": null
     },
+    "miriad-qlora-doc-rag": {
+      "n": 300,
+      "mean_score": 0.8767,
+      "ci95": [
+        0.8467,
+        0.905
+      ],
+      "judge_sd": 0.0,
+      "unparseable": 0,
+      "max_new_tokens": 256,
+      "capped_answers": 0,
+      "mcq_accuracy": null
+    },
+    "miriad-qlora-doc": {
+      "n": 300,
+      "mean_score": 0.6744,
+      "ci95": [
+        0.6306,
+        0.7189
+      ],
+      "judge_sd": 0.0058,
+      "unparseable": 0,
+      "max_new_tokens": 256,
+      "capped_answers": 0,
+      "mcq_accuracy": null
+    },
     "miriad-qlora-qa-rag": {
       "n": 300,
       "mean_score": 0.8728,
@@ -72,6 +98,20 @@
       "test": "sign-flip permutation on per-item score differences"
     },
     {
+      "arm_a": "miriad-rag",
+      "arm_b": "miriad-qlora-doc",
+      "n": 300,
+      "delta": 0.2039,
+      "ci95": [
+        0.1583,
+        0.2506
+      ],
+      "p_value": 4.999750012499375e-05,
+      "n_a_higher": 109,
+      "n_b_higher": 24,
+      "test": "sign-flip permutation on per-item score differences"
+    },
+    {
       "arm_a": "miriad-qlora-qa",
       "arm_b": "miriad-base",
       "n": 300,
@@ -83,6 +123,20 @@
       "p_value": 4.999750012499375e-05,
       "n_a_higher": 31,
       "n_b_higher": 78,
+      "test": "sign-flip permutation on per-item score differences"
+    },
+    {
+      "arm_a": "miriad-qlora-doc",
+      "arm_b": "miriad-base",
+      "n": 300,
+      "delta": -0.0056,
+      "ci95": [
+        -0.0411,
+        0.0294
+      ],
+      "p_value": 0.7489625518724063,
+      "n_a_higher": 40,
+      "n_b_higher": 44,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
@@ -112,6 +166,20 @@
       "n_a_higher": 25,
       "n_b_higher": 31,
       "test": "sign-flip permutation on per-item score differences"
+    },
+    {
+      "arm_a": "miriad-qlora-doc-rag",
+      "arm_b": "miriad-rag",
+      "n": 300,
+      "delta": -0.0017,
+      "ci95": [
+        -0.0261,
+        0.0233
+      ],
+      "p_value": 0.9316534173291335,
+      "n_a_higher": 26,
+      "n_b_higher": 26,
+      "test": "sign-flip permutation on per-item score differences"
     }
   ],
   "pairwise": [
@@ -125,6 +193,15 @@
       "position_bias_rate": 0.1733
     },
     {
+      "arm_a": "miriad-rag",
+      "arm_b": "miriad-qlora-doc",
+      "a_wins": 177,
+      "b_wins": 20,
+      "ties": 41,
+      "inconsistent": 62,
+      "position_bias_rate": 0.2067
+    },
+    {
       "arm_a": "miriad-qlora-qa",
       "arm_b": "miriad-base",
       "a_wins": 22,
@@ -132,6 +209,15 @@
       "ties": 127,
       "inconsistent": 83,
       "position_bias_rate": 0.2767
+    },
+    {
+      "arm_a": "miriad-qlora-doc",
+      "arm_b": "miriad-base",
+      "a_wins": 28,
+      "b_wins": 26,
+      "ties": 157,
+      "inconsistent": 89,
+      "position_bias_rate": 0.2967
     },
     {
       "arm_a": "miriad-rag",
@@ -150,6 +236,15 @@
       "ties": 101,
       "inconsistent": 97,
       "position_bias_rate": 0.3233
+    },
+    {
+      "arm_a": "miriad-qlora-doc-rag",
+      "arm_b": "miriad-rag",
+      "a_wins": 47,
+      "b_wins": 52,
+      "ties": 118,
+      "inconsistent": 83,
+      "position_bias_rate": 0.2767
     }
   ]
 }

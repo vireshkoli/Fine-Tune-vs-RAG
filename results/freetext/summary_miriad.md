@@ -3,13 +3,18 @@
 | Arm | Judge score (0-1) | 95% CI | Judge SD | Capped |
 | --- | ---: | :---: | ---: | ---: |
 | `miriad-rag` | **0.878** | [0.85, 0.91] | 0.004 | 0% @256 |
+| `miriad-qlora-doc-rag` | 0.877 | [0.85, 0.91] | 0.000 | 0% @256 |
 | `miriad-qlora-qa-rag` | 0.873 | [0.84, 0.90] | 0.004 | 0% @256 |
 | `miriad-base` | 0.680 | [0.64, 0.72] | 0.004 | 0% @256 |
+| `miriad-qlora-doc` | 0.674 | [0.63, 0.72] | 0.006 | 0% @256 |
 | `miriad-qlora-qa` | 0.592 | [0.55, 0.64] | 0.008 | 3% @256 |
 
 | Paired comparison | Free-text Δ (pts) | 95% CI | p (permutation) | Pairwise, both orders |
 | --- | ---: | :---: | ---: | :---: |
 | `miriad-rag` - `miriad-qlora-qa` | **+28.6** | [+24.1, +33.2] | 5e-5 | 190-10 (17% flipped) |
+| `miriad-rag` - `miriad-qlora-doc` | **+20.4** | [+15.8, +25.1] | 5e-5 | 177-20 (21% flipped) |
 | `miriad-qlora-qa` - `miriad-base` | **-8.8** | [-12.8, -4.7] | 5e-5 | 22-68 (28% flipped) |
+| `miriad-qlora-doc` - `miriad-base` | -0.6 | [-4.1, +2.9] | 0.749 | 28-26 (30% flipped) |
 | `miriad-rag` - `miriad-base` | **+19.8** | [+15.4, +24.3] | 5e-5 | 179-12 (15% flipped) |
 | `miriad-qlora-qa-rag` - `miriad-rag` | -0.6 | [-3.1, +1.9] | 0.652 | 60-42 (32% flipped) |
+| `miriad-qlora-doc-rag` - `miriad-rag` | -0.2 | [-2.6, +2.3] | 0.932 | 47-52 (28% flipped) |
