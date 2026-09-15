@@ -19,7 +19,13 @@ import sys
 from rich.console import Console
 from rich.table import Table
 
-from fvr.ops.hub import ADAPTER_FILES, SPACE_ENTRY_POINT, HubTargets
+from fvr.ops.hub import (
+    ADAPTER_FILES,
+    INDEX_FILES,
+    LIVE_SPACE_ENTRY_POINT,
+    SPACE_ENTRY_POINT,
+    HubTargets,
+)
 from fvr.ops.teardown import missing_recoverable_artifacts
 
 console = Console()
@@ -92,6 +98,35 @@ def _hub_checks() -> list[tuple[str, bool, str]]:
                 "demo Space published",
                 not missing_space,
                 targets.space_repo if not missing_space else f"missing {missing_space}",
+            )
+        )
+
+    try:
+        live_files = set(api.list_repo_files(targets.live_space_repo, repo_type="space"))
+    except Exception as exc:
+        checks.append(("live demo published", False, f"{targets.live_space_repo}: {exc}"))
+    else:
+        needed_live = {LIVE_SPACE_ENTRY_POINT, "bench.py", "requirements.txt", "README.md"}
+        missing_live = sorted(needed_live - live_files)
+        checks.append(
+            (
+                "live demo published",
+                not missing_live,
+                targets.live_space_repo if not missing_live else f"missing {missing_live}",
+            )
+        )
+
+    try:
+        index_files = set(api.list_repo_files(targets.index_dataset_repo, repo_type="dataset"))
+    except Exception as exc:
+        checks.append(("parity index published", False, f"{targets.index_dataset_repo}: {exc}"))
+    else:
+        missing_index = sorted(set(INDEX_FILES) - index_files)
+        checks.append(
+            (
+                "parity index published",
+                not missing_index,
+                targets.index_dataset_repo if not missing_index else f"missing {missing_index}",
             )
         )
 

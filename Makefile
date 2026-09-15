@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc space-data push-dry push matrix matrix-run judge-server freetext judge kappa freetext-stats
+.PHONY: help setup setup-gpu setup-check lint fmt type test check check-ci splits verify-splits index index-estimate eval report train train-estimate contamination errors verify-recoverable teardown docker-build clean-pyc space-data push-dry push matrix matrix-run judge-server freetext judge kappa freetext-stats push-live-dry push-live
 
 PY := uv run
 
@@ -117,6 +117,12 @@ freetext:  ## Generate free-text answers for one arm (ARM=base)
 
 judge:  ## Score generated free-text answers with the LLM judge (needs the server)
 	$(PY) python scripts/13_judge_freetext.py --all
+
+push-live-dry:  ## Manifest for the live demo (parity index dataset + ZeroGPU Space); uploads nothing
+	$(PY) python scripts/16_push_live_demo.py
+
+push-live:  ## Publish the live demo: index dataset, then the ZeroGPU Space
+	$(PY) python scripts/16_push_live_demo.py --execute
 
 freetext-stats:  ## Tables + paired tests over judged free-text runs (DATASET=medmcqa|miriad)
 	$(PY) python scripts/15_freetext_stats.py --dataset $(or $(DATASET),medmcqa)
