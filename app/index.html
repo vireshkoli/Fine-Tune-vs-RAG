@@ -28,7 +28,7 @@
   </nav>
 </header>
 
-<h2>The three findings</h2>
+<h2>The five findings</h2>
 
 <p><strong>1. On identical information, the index beat the weights.</strong>
 <code>rag-parity</code> retrieves the same MedMCQA explanations the fine-tune trained on —
@@ -42,7 +42,19 @@ underpowered one. Yet its retrieval <em>works</em>: it surfaces the gold answer 
 items. Lexical presence of an answer is not usable evidence.
 <strong>The corpus mattered more than the technique.</strong></p>
 
-<p><strong>3. Fine-tuning repays its training cost at ~200,000 queries.</strong> A
+<p><strong>3. Fine-tuning's MCQ gain reverses when the model must <em>write</em> the
+answer.</strong> Asked the same questions open-ended and graded by a cross-family 70B judge,
+the adapter scores <strong>5.8 points below its own base</strong> (p&nbsp;=&nbsp;0.024) where
+it gained +6.1 on multiple choice; retrieval's gain transfers almost intact (+9.3). The
+weights learned to rank candidates and a register, not the facts to produce an answer.</p>
+
+<p><strong>4. Under strict information parity the index wins by 20–29 points, whichever way
+the weights were trained.</strong> On MIRIAD — the same 17,006 passages fine-tuned on and
+indexed, questions held out per passage — an adapter trained on 30,001 QA pairs from the
+test passages scores 8.8 points <em>below</em> base; one trained on the passages themselves
+lands exactly where base was. Retrieval over the same passages: +19.8.</p>
+
+<p><strong>5. Fine-tuning repays its training cost at ~200,000 queries.</strong> A
 <em>merged</em> adapter has identical inference cost to the base, so its advantage is purely
 prompt length: 113 tokens versus 738.</p>
 
@@ -131,9 +143,12 @@ deliverable.</strong></p>
   (+3.2) the base model lacks.</li>
   <li><strong>31.3% of the evaluation pool is dentistry</strong>, the subject where
   retrieval helps least.</li>
-  <li><strong>The two indices differ 7.3× in size</strong>, so parity-vs-external conflates
-  corpus content with corpus size.</li>
-  <li><strong>No free-text evaluation.</strong> All results are 4-option MCQ.</li>
+  <li><strong>The two indices differ 7.3× in size</strong> — measured and resolved: at a
+  matched chunk count the parity-vs-external gap <em>widened</em>, so the effect is corpus
+  content, not size.</li>
+  <li><strong>Free-text results rest on one LLM judge</strong>, self-consistent and judged in
+  both orders, but the 50-item human agreement check is not yet done. The browser below
+  shows the MCQ runs only.</li>
   <li><strong>This demo shows no retrieved passages.</strong> The committed run JSONs store
   predictions and token counts, not the retrieved text; showing it would mean re-running
   retrieval.</li>

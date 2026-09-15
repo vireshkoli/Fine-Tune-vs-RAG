@@ -1,7 +1,8 @@
 # Fine-Tune vs. Retrieve
 
-**Retrieval beat fine-tuning by 4 points on identical information — and the same
-retrieval over a different corpus was worth exactly nothing.**
+**Retrieval beat fine-tuning by 4 points on identical information, by 20–29
+points when the model had to write the answer — and the same retrieval over a
+different corpus was worth exactly nothing.**
 
 A controlled six-arm benchmark in clinical multiple-choice QA. One base model,
 one frozen 1,000-item test set, one prompt, one GPU. Every number below comes
@@ -38,7 +39,7 @@ McNemar over identical items. Every table reports training seed 42; the trained
 arms were replicated at two further seeds — `qlora` 62.8 ± 1.1,
 `qlora-rag` 62.3 ± 0.8, `qlora-rag-parity` 71.7 ± 0.8.
 
-## The four findings
+## The five findings
 
 **1. On identical information, the index beat the weights.** `rag-parity`
 retrieves the same MedMCQA explanations the fine-tune trained on — same base
@@ -60,7 +61,17 @@ pick among candidates, not the facts to generate one — the index carries
 knowledge, the weights carried a format. Position bias controlled by judging
 both orders; human κ pending.
 
-**4. Fine-tuning repays its training cost at ~200,000 queries.** A *merged*
+**4. Under strict information parity — the same passages in the weights and
+in the index — the index wins by 20–29 points, whichever way the weights were
+trained.** Built from MIRIAD: 17,006 passages, one QA pair per passage held
+out as the test set, the rest fine-tuned on, every passage indexed. An adapter
+trained on 30,001 QA pairs *from the test passages* scores **8.8 points below
+the untouched base** (p = 5×10⁻⁵); an adapter trained on the passages
+themselves lands exactly where base was (−0.6, p = 0.75). Retrieval over the
+same passages: **+19.8**. Neither adapter adds anything once the passage is in
+the prompt. [REPORT §2.5](REPORT.md#25-literal-information-parity-on-miriad-the-same-passages-in-the-weights-and-in-the-index).
+
+**5. Fine-tuning repays its training cost at ~200,000 queries.** A *merged*
 adapter has identical inference cost to the base (102 ms vs 103 ms), so
 fine-tuning's advantage is purely prompt length: 113 tokens versus 738.
 
@@ -187,8 +198,14 @@ deployment.
   +10.3 to +16.4 points, so the effect is corpus content, not size. That run
   also showed a thin wrong corpus scoring **6.2 points below no retrieval at
   all** (p<0.0001) — bad RAG is a regression, not a wash.
-- **Free-text results rest on one LLM judge.** Self-consistent (SD ≤ 0.011)
-  and cross-family from every arm, but the 50-item human κ is not yet done.
+- **Free-text results rest on one LLM judge.** Self-consistent (SD ≤ 0.011),
+  cross-family from every arm, and every pairwise verdict was taken in both
+  orders with the 15–38% that flipped excluded — but the 50-item human κ is
+  not yet done.
+- **The MIRIAD parity fine-tunes are one epoch at rank 16.** That is the
+  budget every other adapter got, and it is what "fine-tune on our docs"
+  usually means in practice; a larger budget might absorb more of the corpus,
+  and would move the cost crossover with it.
 
 Full methodology, per-subject breakdowns, error taxonomy and the decision
 framework: **[REPORT.md](REPORT.md)**.

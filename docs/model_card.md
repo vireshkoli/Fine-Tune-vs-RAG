@@ -136,9 +136,19 @@ retrieval arm serves.
    (62.8 ± 1.1). Differences between configurations smaller than that spread —
    including every LoRA-rank and epoch ablation in the repository — are not
    evidence of anything.
-3. **Narrow evaluation.** 4-option multiple choice only, scored by constrained
-   log-probability. No free-text generation, no citation, no calibration
-   assessment beyond confidence margins.
+3. **The MCQ gain does not survive free-text generation — it reverses.**
+   Every accuracy above is 4-option multiple choice scored by constrained
+   log-probability. Asked the same 300 test questions open-ended (options
+   hidden) and graded by a cross-family 70B judge against the gold answer,
+   this adapter scores **5.8 points *below* the base model it was trained
+   from** (0.396 vs 0.454, p = 0.024, pairwise both orders 31–83), while
+   retrieval over the same explanations gains +9.3. The adapter learned to
+   rank candidates and an exam-answer register, not the facts needed to
+   produce an answer. A stricter replication on MIRIAD (the same passages in
+   the weights and in the index) shows the same reversal at −8.8. **Do not
+   use this adapter for generation**; it is an MCQ artefact. No citation or
+   calibration assessment beyond confidence margins. Full detail in
+   [REPORT.md §2.4–2.5](https://github.com/vireshkoli/Fine-Tune-vs-RAG/blob/main/REPORT.md#24-fine-tunings-gain-does-not-survive-free-text--it-reverses).
 4. **31.3% of the evaluation pool is dentistry**, not general medicine. Results
    excluding it are meaningfully different (base 59.8%, this adapter 66.5%).
 5. **English only**, and the questions reflect the Indian medical curriculum.
