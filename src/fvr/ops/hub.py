@@ -73,6 +73,8 @@ class HubTargets:
     namespace: str
     adapter_name: str = "qwen3-8b-medmcqa-qlora"
     space_name: str = "fine-tune-vs-rag"
+    live_space_name: str = "fine-tune-vs-rag-live"
+    index_dataset_name: str = "fine-tune-vs-rag-parity-index"
 
     @property
     def adapter_repo(self) -> str:
@@ -81,6 +83,14 @@ class HubTargets:
     @property
     def space_repo(self) -> str:
         return f"{self.namespace}/{self.space_name}"
+
+    @property
+    def live_space_repo(self) -> str:
+        return f"{self.namespace}/{self.live_space_name}"
+
+    @property
+    def index_dataset_repo(self) -> str:
+        return f"{self.namespace}/{self.index_dataset_name}"
 
 
 @dataclass
@@ -199,6 +209,55 @@ def plan_space_upload(app_dir: Path, targets: HubTargets) -> UploadPlan:
     for path in sorted(app_dir.rglob("*")):
         if path.is_file() and "__pycache__" not in path.parts:
             plan.entries.append((path, str(path.relative_to(app_dir))))
+    assert_upload_safe(plan)
+    return plan
+
+
+#: The live Space's Gradio entry point.
+LIVE_SPACE_ENTRY_POINT = "app.py"
+#: The ZeroGPU tier a free account may hold two of; verified by creating and
+#: deleting a probe Space before this was written.
+LIVE_SPACE_HARDWARE = "zero-a10g"
+#: The files that make up a saved parity index — see ``fvr.retrieval.index``.
+INDEX_FILES: tuple[str, ...] = ("index.faiss", "passages.jsonl", "meta.json", "build_stats.json")
+
+
+def plan_live_space_upload(app_dir: Path, targets: HubTargets) -> UploadPlan:
+    """Resolve the live Space upload: ``app.py`` and everything beside it.
+
+    The Space README is checked like a model card: it is what a visitor reads
+    before typing a symptom, so it carries the same non-negotiable statement.
+    """
+    app_dir = Path(app_dir)
+    if not (app_dir / LIVE_SPACE_ENTRY_POINT).is_file():
+        raise FileNotFoundError(f"{app_dir} has no {LIVE_SPACE_ENTRY_POINT}")
+    assert_card_safe((app_dir / "README.md").read_text(encoding="utf-8"))
+
+    plan = UploadPlan(repo_id=targets.live_space_repo, repo_type="space")
+    for path in sorted(app_dir.rglob("*")):
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+            plan.entries.append((path, str(path.relative_to(app_dir))))
+    assert_upload_safe(plan)
+    return plan
+
+
+def plan_index_upload(index_dir: Path, card_path: Path, targets: HubTargets) -> UploadPlan:
+    """Resolve the parity-index dataset upload.
+
+    Only the saved-index files and the dataset card go up; the transient
+    ``embeddings.f32`` a build writes is excluded by allowlist, as is anything
+    else that happens to be in the directory.
+    """
+    index_dir = Path(index_dir)
+    missing = [name for name in INDEX_FILES if not (index_dir / name).is_file()]
+    if missing:
+        raise FileNotFoundError(f"{index_dir} is not a complete saved index: missing {missing}")
+    assert_card_safe(Path(card_path).read_text(encoding="utf-8"))
+
+    plan = UploadPlan(repo_id=targets.index_dataset_repo, repo_type="dataset")
+    plan.entries.append((Path(card_path), "README.md"))
+    for name in INDEX_FILES:
+        plan.entries.append((index_dir / name, name))
     assert_upload_safe(plan)
     return plan
 
