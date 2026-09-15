@@ -1,0 +1,8 @@
+# Pinned to the versions the benchmark ran with, so the demo's outputs are the
+# benchmark's. torch is left to the ZeroGPU image.
+transformers==5.14.1
+peft==0.20.0
+sentence-transformers==5.7.0
+faiss-cpu==1.15.0
+huggingface_hub>=0.34
+numpy>=2

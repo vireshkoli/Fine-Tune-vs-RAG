@@ -194,3 +194,71 @@ class TestCardMatchesResults:
 
             tokens = [p["prompt_tokens"] for p in payload["predictions"]]
             assert claimed["prompt_tokens"] == pytest.approx(sum(tokens) / len(tokens), abs=0.5)
+
+
+class TestLiveDemoPlans:
+    def test_live_space_plan_lists_the_app_and_requires_the_disclaimer(
+        self, tmp_path: Path
+    ) -> None:
+        from fvr.ops.hub import plan_live_space_upload
+
+        app_dir = tmp_path / "space_live"
+        app_dir.mkdir()
+        (app_dir / "app.py").write_text("print('hi')\n", encoding="utf-8")
+        (app_dir / "bench.py").write_text("X = 1\n", encoding="utf-8")
+        (app_dir / "__pycache__").mkdir()
+        (app_dir / "__pycache__" / "bench.cpython-312.pyc").write_bytes(b"\x00")
+        (app_dir / "README.md").write_text("# demo\n", encoding="utf-8")
+        targets = HubTargets(namespace="someone")
+        with pytest.raises(UnsafeCardError):
+            plan_live_space_upload(app_dir, targets)
+
+        (app_dir / "README.md").write_text(
+            "# demo\n\nNot for clinical use. Not a medical device.\n", encoding="utf-8"
+        )
+        plan = plan_live_space_upload(app_dir, targets)
+        assert plan.repo_id == "someone/fine-tune-vs-rag-live"
+        assert plan.repo_type == "space"
+        assert sorted(remote for _, remote in plan.entries) == ["README.md", "app.py", "bench.py"]
+
+    def test_index_plan_uploads_only_the_saved_index_files(self, tmp_path: Path) -> None:
+        from fvr.ops.hub import INDEX_FILES, plan_index_upload
+
+        index_dir = tmp_path / "parity"
+        index_dir.mkdir()
+        for name in INDEX_FILES:
+            (index_dir / name).write_bytes(b"x")
+        (index_dir / "embeddings.f32").write_bytes(b"x" * 100)  # build scratch, never published
+        card = tmp_path / "card.md"
+        card.write_text("Not for clinical use. Not a medical device.\n", encoding="utf-8")
+        plan = plan_index_upload(index_dir, card, HubTargets(namespace="someone"))
+        assert plan.repo_id == "someone/fine-tune-vs-rag-parity-index"
+        assert plan.repo_type == "dataset"
+        remotes = sorted(remote for _, remote in plan.entries)
+        assert remotes == sorted(["README.md", *INDEX_FILES])
+        assert "embeddings.f32" not in remotes
+
+    def test_index_plan_refuses_an_incomplete_index(self, tmp_path: Path) -> None:
+        from fvr.ops.hub import plan_index_upload
+
+        index_dir = tmp_path / "parity"
+        index_dir.mkdir()
+        (index_dir / "index.faiss").write_bytes(b"x")
+        card = tmp_path / "card.md"
+        card.write_text("Not for clinical use. Not a medical device.\n", encoding="utf-8")
+        with pytest.raises(FileNotFoundError, match="missing"):
+            plan_index_upload(index_dir, card, HubTargets(namespace="someone"))
+
+    def test_real_space_and_index_card_pass_the_planners(self) -> None:
+        """The files that will actually be pushed satisfy every guard."""
+        from fvr.config import PROJECT_ROOT
+        from fvr.ops.hub import assert_card_safe, plan_live_space_upload
+
+        plan = plan_live_space_upload(PROJECT_ROOT / "space_live", HubTargets(namespace="x"))
+        assert {remote for _, remote in plan.entries} >= {
+            "app.py",
+            "bench.py",
+            "README.md",
+            "requirements.txt",
+        }
+        assert_card_safe((PROJECT_ROOT / "docs" / "index_dataset_card.md").read_text("utf-8"))
