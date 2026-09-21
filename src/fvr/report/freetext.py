@@ -61,13 +61,28 @@ class JudgedArm:
         return self.capped_answers / self.n
 
 
-def load_judged(path: Path) -> JudgedArm:
+def load_judged(path: Path, *, strict: bool = False) -> JudgedArm:
+    """Load one arm's judgement.
+
+    ``strict`` collapses the 0/1/2 rubric to fully-correct-or-not: an item
+    scores 1 when the judge's majority grade is 2, else 0. The human check
+    (κ = 0.51 on the three-way scale, 0.76 on this binary one) showed the
+    judge hands out partial credit more freely than a person does, so every
+    paired comparison is reported under both scorings.
+    """
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    scores = {
-        str(item["item_id"]): float(item["mean"]) / MAX_POINTWISE
-        for item in payload["items"]
-        if item.get("scores")
-    }
+    if strict:
+        scores = {
+            str(item["item_id"]): 1.0 if int(item["majority"]) == MAX_POINTWISE else 0.0
+            for item in payload["items"]
+            if item.get("scores")
+        }
+    else:
+        scores = {
+            str(item["item_id"]): float(item["mean"]) / MAX_POINTWISE
+            for item in payload["items"]
+            if item.get("scores")
+        }
     return JudgedArm(
         name=str(payload["arm"]),
         scores=scores,

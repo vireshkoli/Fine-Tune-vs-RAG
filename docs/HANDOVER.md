@@ -168,12 +168,10 @@ project's downloads never entered the shared cache to begin with.
 
 ## 7. Known gaps, in priority order
 
-1. **Cohen's κ for the LLM judge.** 50 rows in
-   `results/freetext/judged/base_kappa_sheet.csv`, `human_score` blank. The
-   judge's own label is deliberately withheld from the sheet so grading is not
-   anchored. Fill it, then `uv run python scripts/13_judge_freetext.py --kappa`.
-   This is the highest-value hour left in the project: every free-text claim in
-   REPORT §2.4 currently rests on one unvalidated judge.
+1. ~~Cohen's κ for the LLM judge.~~ **Done** (2026-09-21): 50 base answers
+   graded blind, κ = 0.51 three-way / 0.76 correct-or-not, judge lenient on
+   partial credit; `scripts/15_freetext_stats.py --strict` regenerates the
+   strict tables that every free-text claim is now reported alongside.
 2. **Hand-annotation of `results/error_analysis/*_review.csv`.** Stratified and
    pre-filled; the `human_label` and `notes` columns are blank.
 3. ~~Live inference demo.~~ **Shipped**: `vireshk/fine-tune-vs-rag-live` on

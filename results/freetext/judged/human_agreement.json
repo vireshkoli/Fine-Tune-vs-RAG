@@ -1,0 +1,7 @@
+{
+  "n": 50,
+  "exact_agreement": 0.68,
+  "cohens_kappa": 0.5116,
+  "interpretation": "moderate",
+  "rubric_version": "1.0.0"
+}

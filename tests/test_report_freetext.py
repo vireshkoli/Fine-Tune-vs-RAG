@@ -156,6 +156,31 @@ class TestLoading:
         record = load_pairwise(pair)
         assert (record.a_wins, record.b_wins, record.decided) == (10, 4, 14)
 
+    def test_strict_scoring_counts_only_a_majority_of_two(self, tmp_path: Path) -> None:
+        """Partial credit is where the judge and the human disagreed; strict drops it."""
+        judged = tmp_path / "base_seed42.json"
+        judged.write_text(
+            json.dumps(
+                {
+                    "arm": "base",
+                    "judge_sd": 0.0,
+                    "unparseable_replies": 0,
+                    "items": [
+                        {"item_id": "full", "scores": [2, 2, 2], "majority": 2, "mean": 2.0},
+                        {"item_id": "mostly", "scores": [2, 2, 1], "majority": 2, "mean": 1.6667},
+                        {"item_id": "partial", "scores": [1, 1, 1], "majority": 1, "mean": 1.0},
+                        {"item_id": "wrong", "scores": [0, 0, 0], "majority": 0, "mean": 0.0},
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        graded = load_judged(judged)
+        strict = load_judged(judged, strict=True)
+        assert strict.scores == {"full": 1.0, "mostly": 1.0, "partial": 0.0, "wrong": 0.0}
+        assert graded.scores["partial"] == 0.5 and graded.scores["mostly"] == pytest.approx(0.83335)
+        assert strict.mean_score < graded.mean_score
+
     def test_old_judged_files_without_a_bound_load(self, tmp_path: Path) -> None:
         """The six MedMCQA files predate max_new_tokens / capped_answers."""
         judged = tmp_path / "base_seed42.json"

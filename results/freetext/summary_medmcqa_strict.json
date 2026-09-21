@@ -2,14 +2,14 @@
   "dataset": "medmcqa",
   "seed": 42,
   "stat_seed": 0,
-  "scoring": "graded: mean of 0/1/2 over judge seeds, /2",
+  "scoring": "strict: majority grade 2 -> 1, else 0",
   "arms": {
     "base": {
       "n": 300,
-      "mean_score": 0.4539,
+      "mean_score": 0.3667,
       "ci95": [
-        0.4033,
-        0.505
+        0.3133,
+        0.4233
       ],
       "judge_sd": 0.0115,
       "unparseable": 0,
@@ -19,10 +19,10 @@
     },
     "qlora-rag-parity": {
       "n": 300,
-      "mean_score": 0.4989,
+      "mean_score": 0.4433,
       "ci95": [
-        0.4461,
-        0.5522
+        0.3867,
+        0.5
       ],
       "judge_sd": 0.0019,
       "unparseable": 0,
@@ -32,10 +32,10 @@
     },
     "qlora-rag": {
       "n": 300,
-      "mean_score": 0.3967,
+      "mean_score": 0.3467,
       "ci95": [
-        0.345,
-        0.4494
+        0.2933,
+        0.4
       ],
       "judge_sd": 0.0038,
       "unparseable": 0,
@@ -45,10 +45,10 @@
     },
     "qlora": {
       "n": 300,
-      "mean_score": 0.3956,
+      "mean_score": 0.3267,
       "ci95": [
-        0.3444,
-        0.4472
+        0.2733,
+        0.38
       ],
       "judge_sd": 0.0038,
       "unparseable": 0,
@@ -58,10 +58,10 @@
     },
     "rag-external": {
       "n": 300,
-      "mean_score": 0.4156,
+      "mean_score": 0.3467,
       "ci95": [
-        0.365,
-        0.4672
+        0.2933,
+        0.4
       ],
       "judge_sd": 0.0115,
       "unparseable": 0,
@@ -71,10 +71,10 @@
     },
     "rag-parity": {
       "n": 300,
-      "mean_score": 0.5472,
+      "mean_score": 0.4867,
       "ci95": [
-        0.495,
-        0.5994
+        0.43,
+        0.5433
       ],
       "judge_sd": 0.0038,
       "unparseable": 0,
@@ -88,70 +88,70 @@
       "arm_a": "rag-parity",
       "arm_b": "qlora",
       "n": 300,
-      "delta": 0.1517,
+      "delta": 0.16,
       "ci95": [
-        0.0922,
-        0.2117
+        0.0967,
+        0.2233
       ],
       "p_value": 4.999750012499375e-05,
-      "n_a_higher": 94,
-      "n_b_higher": 40,
+      "n_a_higher": 76,
+      "n_b_higher": 28,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "qlora-rag-parity",
       "arm_b": "rag-parity",
       "n": 300,
-      "delta": -0.0483,
+      "delta": -0.0433,
       "ci95": [
-        -0.095,
-        -0.0017
+        -0.0967,
+        0.0067
       ],
-      "p_value": 0.048397580120993954,
-      "n_a_higher": 29,
-      "n_b_higher": 51,
+      "p_value": 0.12214389280535973,
+      "n_a_higher": 24,
+      "n_b_higher": 37,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "qlora",
       "arm_b": "base",
       "n": 300,
-      "delta": -0.0583,
+      "delta": -0.04,
       "ci95": [
-        -0.1083,
-        -0.0083
+        -0.0967,
+        0.0167
       ],
-      "p_value": 0.02359882005899705,
-      "n_a_higher": 38,
-      "n_b_higher": 68,
+      "p_value": 0.19424028798560072,
+      "n_a_higher": 30,
+      "n_b_higher": 42,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "rag-parity",
       "arm_b": "base",
       "n": 300,
-      "delta": 0.0933,
+      "delta": 0.12,
       "ci95": [
-        0.045,
-        0.1417
+        0.0667,
+        0.1734
       ],
-      "p_value": 0.00034998250087495624,
-      "n_a_higher": 66,
-      "n_b_higher": 33,
+      "p_value": 9.99950002499875e-05,
+      "n_a_higher": 56,
+      "n_b_higher": 20,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "rag-external",
       "arm_b": "base",
       "n": 300,
-      "delta": -0.0383,
+      "delta": -0.02,
       "ci95": [
-        -0.0872,
-        0.0111
+        -0.0733,
+        0.0333
       ],
-      "p_value": 0.12939353032348383,
-      "n_a_higher": 47,
-      "n_b_higher": 64,
+      "p_value": 0.535973201339933,
+      "n_a_higher": 30,
+      "n_b_higher": 36,
       "test": "sign-flip permutation on per-item score differences"
     }
   ],

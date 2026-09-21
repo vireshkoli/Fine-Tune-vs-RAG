@@ -2,14 +2,14 @@
   "dataset": "miriad",
   "seed": 42,
   "stat_seed": 0,
-  "scoring": "graded: mean of 0/1/2 over judge seeds, /2",
+  "scoring": "strict: majority grade 2 -> 1, else 0",
   "arms": {
     "miriad-base": {
       "n": 300,
-      "mean_score": 0.68,
+      "mean_score": 0.52,
       "ci95": [
-        0.6389,
-        0.7211
+        0.4633,
+        0.5767
       ],
       "judge_sd": 0.0038,
       "unparseable": 0,
@@ -19,10 +19,10 @@
     },
     "miriad-qlora-doc-rag": {
       "n": 300,
-      "mean_score": 0.8767,
+      "mean_score": 0.7967,
       "ci95": [
-        0.8467,
-        0.905
+        0.75,
+        0.84
       ],
       "judge_sd": 0.0,
       "unparseable": 0,
@@ -32,10 +32,10 @@
     },
     "miriad-qlora-doc": {
       "n": 300,
-      "mean_score": 0.6744,
+      "mean_score": 0.5433,
       "ci95": [
-        0.6306,
-        0.7189
+        0.4867,
+        0.6
       ],
       "judge_sd": 0.0058,
       "unparseable": 0,
@@ -45,10 +45,10 @@
     },
     "miriad-qlora-qa-rag": {
       "n": 300,
-      "mean_score": 0.8728,
+      "mean_score": 0.7767,
       "ci95": [
-        0.8433,
-        0.9006
+        0.73,
+        0.8233
       ],
       "judge_sd": 0.0038,
       "unparseable": 0,
@@ -58,10 +58,10 @@
     },
     "miriad-qlora-qa": {
       "n": 300,
-      "mean_score": 0.5922,
+      "mean_score": 0.4467,
       "ci95": [
-        0.5461,
-        0.6378
+        0.39,
+        0.5033
       ],
       "judge_sd": 0.0077,
       "unparseable": 0,
@@ -71,10 +71,10 @@
     },
     "miriad-rag": {
       "n": 300,
-      "mean_score": 0.8783,
+      "mean_score": 0.79,
       "ci95": [
-        0.8494,
-        0.905
+        0.7433,
+        0.8333
       ],
       "judge_sd": 0.0038,
       "unparseable": 0,
@@ -88,98 +88,98 @@
       "arm_a": "miriad-rag",
       "arm_b": "miriad-qlora-qa",
       "n": 300,
-      "delta": 0.2861,
+      "delta": 0.3433,
       "ci95": [
-        0.2406,
-        0.3322
+        0.28,
+        0.4067
       ],
       "p_value": 4.999750012499375e-05,
-      "n_a_higher": 138,
-      "n_b_higher": 15,
+      "n_a_higher": 116,
+      "n_b_higher": 13,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "miriad-rag",
       "arm_b": "miriad-qlora-doc",
       "n": 300,
-      "delta": 0.2039,
+      "delta": 0.2467,
       "ci95": [
-        0.1583,
-        0.2506
+        0.1867,
+        0.31
       ],
       "p_value": 4.999750012499375e-05,
-      "n_a_higher": 109,
-      "n_b_higher": 24,
+      "n_a_higher": 92,
+      "n_b_higher": 18,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "miriad-qlora-qa",
       "arm_b": "miriad-base",
       "n": 300,
-      "delta": -0.0878,
+      "delta": -0.0733,
       "ci95": [
-        -0.1283,
-        -0.0472
+        -0.1233,
+        -0.0233
       ],
-      "p_value": 4.999750012499375e-05,
-      "n_a_higher": 31,
-      "n_b_higher": 78,
+      "p_value": 0.006199690015499225,
+      "n_a_higher": 19,
+      "n_b_higher": 41,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "miriad-qlora-doc",
       "arm_b": "miriad-base",
       "n": 300,
-      "delta": -0.0056,
+      "delta": 0.0233,
       "ci95": [
-        -0.0411,
-        0.0294
+        -0.0233,
+        0.07
       ],
-      "p_value": 0.7489625518724063,
-      "n_a_higher": 40,
-      "n_b_higher": 44,
+      "p_value": 0.4016299185040748,
+      "n_a_higher": 29,
+      "n_b_higher": 22,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "miriad-rag",
       "arm_b": "miriad-base",
       "n": 300,
-      "delta": 0.1983,
+      "delta": 0.27,
       "ci95": [
-        0.1544,
-        0.2433
+        0.21,
+        0.3333
       ],
       "p_value": 4.999750012499375e-05,
-      "n_a_higher": 112,
-      "n_b_higher": 24,
+      "n_a_higher": 97,
+      "n_b_higher": 16,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "miriad-qlora-qa-rag",
       "arm_b": "miriad-rag",
       "n": 300,
-      "delta": -0.0056,
+      "delta": -0.0133,
       "ci95": [
-        -0.0306,
-        0.0194
+        -0.06,
+        0.0333
       ],
-      "p_value": 0.6520673966301684,
-      "n_a_higher": 25,
-      "n_b_higher": 31,
+      "p_value": 0.6650167491625418,
+      "n_a_higher": 22,
+      "n_b_higher": 26,
       "test": "sign-flip permutation on per-item score differences"
     },
     {
       "arm_a": "miriad-qlora-doc-rag",
       "arm_b": "miriad-rag",
       "n": 300,
-      "delta": -0.0017,
+      "delta": 0.0067,
       "ci95": [
-        -0.0261,
-        0.0233
+        -0.0367,
+        0.05
       ],
-      "p_value": 0.9316534173291335,
-      "n_a_higher": 26,
-      "n_b_higher": 26,
+      "p_value": 0.8758562071896405,
+      "n_a_higher": 22,
+      "n_b_higher": 20,
       "test": "sign-flip permutation on per-item score differences"
     }
   ],

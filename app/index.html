@@ -42,11 +42,14 @@ underpowered one. Yet its retrieval <em>works</em>: it surfaces the gold answer 
 items. Lexical presence of an answer is not usable evidence.
 <strong>The corpus mattered more than the technique.</strong></p>
 
-<p><strong>3. Fine-tuning's MCQ gain reverses when the model must <em>write</em> the
+<p><strong>3. Fine-tuning's MCQ gain does not transfer to <em>writing</em> the
 answer.</strong> Asked the same questions open-ended and graded by a cross-family 70B judge,
-the adapter scores <strong>5.8 points below its own base</strong> (p&nbsp;=&nbsp;0.024) where
-it gained +6.1 on multiple choice; retrieval's gain transfers almost intact (+9.3). The
-weights learned to rank candidates and a register, not the facts to produce an answer.</p>
+the adapter scores 5.8 points below its own base where it gained +6.1 on multiple choice;
+retrieval's gain transfers almost intact (+9.3). A 50-item human check found the judge
+lenient on partial credit (κ&nbsp;=&nbsp;0.76 on correct-or-not), and scored strictly the
+adapter's deficit is −4.0 and not significant while retrieval's lead over the weights grows
+to +16.0. The weights learned to rank candidates and a register, not the facts to produce
+an answer.</p>
 
 <p><strong>4. Under strict information parity the index wins by 20–29 points, whichever way
 the weights were trained.</strong> On MIRIAD — the same 17,006 passages fine-tuned on and
@@ -146,8 +149,9 @@ deliverable.</strong></p>
   <li><strong>The two indices differ 7.3× in size</strong> — measured and resolved: at a
   matched chunk count the parity-vs-external gap <em>widened</em>, so the effect is corpus
   content, not size.</li>
-  <li><strong>Free-text results rest on one LLM judge</strong>, self-consistent and judged in
-  both orders, but the 50-item human agreement check is not yet done. The browser below
+  <li><strong>Free-text results rest on one LLM judge</strong>, self-consistent, judged in
+  both orders and human-checked on 50 items (κ 0.51 three-way, 0.76 correct-or-not); every
+  free-text delta is reported under both a graded and a strict scoring. The browser below
   shows the MCQ runs only.</li>
   <li><strong>This page runs no model.</strong> For live answers from all four arms, with the
   retrieved passages shown, use the

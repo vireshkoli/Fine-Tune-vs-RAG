@@ -148,7 +148,7 @@ Over the external corpus they do not compose: `qlora-rag` (61.4%) is *below*
 `qlora` alone (62.9%), though not significantly (p = 0.33). Injecting 625 tokens
 of irrelevant context is at best free and at worst mildly harmful.
 
-### 2.4 Fine-tuning's gain does not survive free text — it reverses
+### 2.4 Fine-tuning's gain does not survive free text
 
 Every number above is 4-option multiple choice scored by constrained
 log-probability. That measures whether a model can *rank four candidates*,
@@ -185,9 +185,15 @@ would have, at that bound, and a truncated answer is the bound's score, not
 the model's.
 
 **Retrieval's gain transferred to generation almost intact. Fine-tuning's
-reversed.** The adapter that gained +6.1 points on MCQ scores 5.8 points
-*below its own base model* when it has to produce the answer, and the gap
-between the index and the weights widens from 4 points to 15.
+did not transfer at all.** The adapter that gained +6.1 points on MCQ scores
+5.8 points *below its own base model* when it has to produce the answer, and
+the gap between the index and the weights widens from 4 points to 15. Under
+the strict scoring introduced below — fully correct or not, which is where the
+human check says the judge is reliable — the adapter's deficit is −4.0 and not
+significant (p = 0.19), so the defensible claim on this set is *no free-text
+gain, point estimate negative*; the same adapter design on MIRIAD (§2.5) is
+significantly below base under both scorings. The index-versus-weights gap is
+**+16.0 strictly** (p = 5×10⁻⁵).
 
 Reading the items settles what happened. The fine-tune answers tersely and
 confidently wrong — "PT" for aPTT, "superior thyroid artery" for the
@@ -198,19 +204,41 @@ picking among candidates, which MCQ rewards, without absorbing the facts
 needed to generate one. **The index carries knowledge; the weights carried a
 format.**
 
-The composition result reverses too: adding the adapter to retrieval, which
-gained +4.1 on MCQ, costs 4.8 under the judge. Retrieval over the wrong corpus
-stays a null in both.
+Composition follows the same pattern: adding the adapter to retrieval, which
+gained +4.1 on MCQ, costs 4.8 under the judge (−4.3 strict, not significant).
+Retrieval over the wrong corpus stays a null in both.
 
 **How much to trust this.** One judge, a 70B Llama-3.3 cross-family from every
 arm, at three seeds. It is stable — within-item SD ≤ 0.011, zero unparseable
-replies in 5,400 — but stable is not the same as right, and the human-agreement
-κ on a 50-item sample is pending. The pairwise column is the position-bias
-control: every pair was judged in both orders and the **31–38% of pairs whose
-verdict flipped with order are excluded**, so a single-order pairwise would
-have been a third noise. Every pair keeps the pointwise direction. One of the
-300 items ("ref: Option 1 and 2") slipped past the option-dependence filter;
-it is identical for every arm and cannot move a paired direction.
+replies in 5,400 — but stable is not the same as right, so 50 of the base
+arm's answers were graded by hand, blind to the judge's score, stratified
+across the judge's three grades (`results/freetext/judged/base_kappa_sheet.csv`).
+**Cohen's κ = 0.51 (moderate), 68% exact agreement**, and the disagreement is
+almost entirely one-directional: in 15 of the 16 disagreements the judge
+scored *higher*, eleven of them a 1 where the human gave 0 — the judge hands
+out partial credit for an adjacent answer ("ophthalmic division" for
+nasociliary nerve, "pancreatic head" for periampullary carcinoma) that a person
+does not. Collapsed to *fully correct or not*, agreement is 90% and **κ = 0.76
+(substantial)**. That leniency is a specific threat to the fine-tuning
+comparison, because base writes broad hedged answers and the adapter writes
+terse specific ones, so every paired test is reported twice: graded (the 0–1
+mean) and strict (majority grade 2 → 1, else 0),
+`results/freetext/summary_medmcqa_strict.md`. Every retrieval result grows
+under strict scoring; the two fine-tuning deltas shrink and lose significance
+on this set. The pairwise column is the position-bias control: every pair was
+judged in both orders and the **31–38% of pairs whose verdict flipped with
+order are excluded**, so a single-order pairwise would have been a third
+noise. Every pair keeps the pointwise direction. One of the 300 items ("ref:
+Option 1 and 2") slipped past the option-dependence filter; it is identical
+for every arm and cannot move a paired direction.
+
+| Paired comparison, strict | Δ (pts) | 95% CI | p |
+| --- | ---: | :---: | ---: |
+| `rag-parity` − `qlora` | **+16.0** | [+9.7, +22.3] | 5×10⁻⁵ |
+| `rag-parity` − `base` | **+12.0** | [+6.7, +17.3] | 1×10⁻⁴ |
+| `qlora` − `base` | −4.0 | [−9.7, +1.7] | 0.19 |
+| `qlora-rag-parity` − `rag-parity` | −4.3 | [−9.7, +0.7] | 0.12 |
+| `rag-external` − `base` | −2.0 | [−7.3, +3.3] | 0.54 |
 
 ### 2.5 Literal information parity on MIRIAD: the same passages in the weights and in the index
 
@@ -276,9 +304,9 @@ differently and the difference is the finding:
   look like.
 - **Training on thirty thousand question–answer pairs *from those passages*
   made it worse.** 8.8 points below the untouched base (p = 5×10⁻⁵, pairwise
-  22–68). The MedMCQA reversal (§2.4) was not an artefact of the fine-tune
-  having seen the wrong material: here it saw exactly the right material and
-  got worse at producing it.
+  22–68; −7.3, p = 0.006 under strict scoring). The MedMCQA deficit (§2.4)
+  was not an artefact of the fine-tune having seen the wrong material: here it
+  saw exactly the right material and got significantly worse at producing it.
 - **Neither adds anything once the passage is in the prompt.** Adapter on top
   of retrieval: −0.6 (p = 0.65) for QA-trained, −0.2 (p = 0.93) for
   passage-trained. All three retrieval arms sit at 0.873–0.878.
@@ -301,15 +329,22 @@ rank-16 adapter on 8B frozen weights should be expected to learn, and is the
 point.
 
 **How much to trust this.** The same single judge as §2.4 (SD ≤ 0.008, 0
-unparseable of 5,400 pointwise calls), and the same position-bias control —
-15–32% of pairwise verdicts flipped with order and were excluded. The base
-model scores 0.68 here against 0.45 on MedMCQA: MIRIAD questions are
-paraphrases of literature sentences and reward fluent general answers, so
-the *level* is not comparable across the two sets; the paired deltas within a
-set are. The passage-trained null is one epoch at rank 16; more epochs or a
-full fine-tune might absorb more, at a cost that §4's crossover would have to
-absorb too — the experiment answers the question at the budget the other
-arms were given, not at every budget.
+unparseable of 5,400 pointwise calls), the same position-bias control —
+15–32% of pairwise verdicts flipped with order and were excluded — and the
+same strict re-scoring, because the human check in §2.4 found the judge
+lenient on partial credit. Here strict scoring *sharpens* every finding
+(`results/freetext/summary_miriad_strict.md`): index over QA-trained weights
++34.3, over passage-trained weights +24.7, over base +27.0 (all p = 5×10⁻⁵);
+the QA-trained adapter stays below base at −7.3 (p = 0.006); the
+passage-trained adapter stays a null (+2.3, p = 0.40); and neither adapter
+adds to retrieval (−1.3 and +0.7, p > 0.6). The base model scores 0.68 here
+against 0.45 on MedMCQA: MIRIAD questions are paraphrases of literature
+sentences and reward fluent general answers, so the *level* is not comparable
+across the two sets; the paired deltas within a set are. The passage-trained
+null is one epoch at rank 16; more epochs or a full fine-tune might absorb
+more, at a cost that §4's crossover would have to absorb too — the experiment
+answers the question at the budget the other arms were given, not at every
+budget.
 
 ---
 
@@ -559,8 +594,10 @@ fine-tuned arm, and it is reported here rather than omitted.
    grew from +10.3 to +16.4 points, so the effect is corpus content, not corpus
    size, and the original figure understated it.
 4. ~~No free-text evaluation.~~ **Run** (§2.4), and it changes the reading of
-   the headline: fine-tuning's MCQ gain reverses under free-text judging.
-   Single judge; human-agreement κ pending.
+   the headline: fine-tuning's MCQ gain does not transfer to generation.
+   Single judge, human-checked on 50 items: κ = 0.51 three-way, 0.76 on
+   correct-or-not, judge lenient on partial credit; every free-text delta is
+   reported under both scorings and the retrieval results hold under both.
 5. ~~One epoch, one LoRA rank.~~ **Swept** (§7.5): rank {8, 16, 32, 64} and
    epochs {1, 2, 3}. Validation loss favours higher rank; test accuracy is flat
    across rank and declines with epochs, all within training-seed noise. These

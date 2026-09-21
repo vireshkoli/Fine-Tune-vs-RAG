@@ -1,6 +1,6 @@
 # Fine-Tune vs. Retrieve
 
-**Retrieval beat fine-tuning by 4 points on identical information, by 20–29
+**Retrieval beat fine-tuning by 4 points on identical information, by 16–34
 points when the model had to write the answer — and the same retrieval over a
 different corpus was worth exactly nothing.**
 
@@ -55,23 +55,25 @@ its retrieval *works*: it surfaces the gold answer in 45.4% of items. Lexical
 presence of an answer is not usable evidence. **The corpus mattered more than
 the technique.**
 
-**3. Fine-tuning's MCQ gain reverses when the model must *produce* the
-answer.** Asked open-ended and graded by a 70B judge, `qlora` scores **5.8
-points below its own base** (p = 0.024) where it gained +6.1 on multiple
-choice; retrieval's +10.2 transfers almost intact (+9.3). The adapter learned to
-pick among candidates, not the facts to generate one — the index carries
-knowledge, the weights carried a format. Position bias controlled by judging
-both orders; human κ pending.
+**3. Fine-tuning's MCQ gain does not transfer to *producing* the answer.**
+Asked open-ended and graded by a 70B judge, `qlora` scores 5.8 points below
+its own base where it gained +6.1 on multiple choice; retrieval's +10.2
+transfers almost intact (+9.3). A 50-item human check found the judge lenient
+on partial credit (κ = 0.51 three-way, **0.76 on correct-or-not**), so every
+delta is also reported strictly: retrieval's gains grow (+12.0 over base,
+**+16.0 over the weights**), the adapter's deficit shrinks to −4.0 and is not
+significant. The adapter learned to pick among candidates, not the facts to
+generate one — the index carries knowledge, the weights carried a format.
 
 **4. Under strict information parity — the same passages in the weights and
 in the index — the index wins by 20–29 points, whichever way the weights were
 trained.** Built from MIRIAD: 17,006 passages, one QA pair per passage held
 out as the test set, the rest fine-tuned on, every passage indexed. An adapter
 trained on 30,001 QA pairs *from the test passages* scores **8.8 points below
-the untouched base** (p = 5×10⁻⁵); an adapter trained on the passages
-themselves lands exactly where base was (−0.6, p = 0.75). Retrieval over the
-same passages: **+19.8**. Neither adapter adds anything once the passage is in
-the prompt. [REPORT §2.5](REPORT.md#25-literal-information-parity-on-miriad-the-same-passages-in-the-weights-and-in-the-index).
+the untouched base** (p = 5×10⁻⁵; −7.3, p = 0.006 strict); an adapter trained
+on the passages themselves lands exactly where base was (−0.6, p = 0.75).
+Retrieval over the same passages: **+19.8** (+27.0 strict). Neither adapter
+adds anything once the passage is in the prompt. [REPORT §2.5](REPORT.md#25-literal-information-parity-on-miriad-the-same-passages-in-the-weights-and-in-the-index).
 
 **5. Fine-tuning repays its training cost at ~200,000 queries.** A *merged*
 adapter has identical inference cost to the base (102 ms vs 103 ms), so
@@ -200,10 +202,12 @@ deployment.
   +10.3 to +16.4 points, so the effect is corpus content, not size. That run
   also showed a thin wrong corpus scoring **6.2 points below no retrieval at
   all** (p<0.0001) — bad RAG is a regression, not a wash.
-- **Free-text results rest on one LLM judge.** Self-consistent (SD ≤ 0.011),
-  cross-family from every arm, and every pairwise verdict was taken in both
-  orders with the 15–38% that flipped excluded — but the 50-item human κ is
-  not yet done.
+- **Free-text results rest on one LLM judge, now human-checked.** 50 answers
+  graded blind: κ = 0.51 on the three-way rubric, 0.76 on correct-or-not; the
+  judge gives partial credit for adjacent answers where a person does not, so
+  every free-text delta is reported under both scorings. Retrieval's results
+  hold under both; the MedMCQA fine-tuning deficit is significant only under
+  the lenient one (the MIRIAD deficit holds under both).
 - **The MIRIAD parity fine-tunes are one epoch at rank 16.** That is the
   budget every other adapter got, and it is what "fine-tune on our docs"
   usually means in practice; a larger budget might absorb more of the corpus,
